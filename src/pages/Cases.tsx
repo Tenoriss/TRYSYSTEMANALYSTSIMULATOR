@@ -1,156 +1,185 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowRight, Award, Clock, Search, SlidersHorizontal } from 'lucide-react'
-import { Badge, Card, EmptyState, Input } from '../components/ui'
+import { ArrowRight, CheckCircle2, Lightbulb, RotateCcw, Search, SlidersHorizontal } from 'lucide-react'
+import { CASES } from '../data/cases'
 import { useApp } from '../context/AppContext'
-import { CASES, CASE_CATEGORIES } from '../data/cases'
 import { computeOverallProgress } from '../lib/scoring'
-import { cn } from '../lib/utils'
+import { relativeTime } from '../lib/utils'
+import { DIFF_KEYS, INDUSTRY_KEYS } from '../i18n'
+import type { TranslationKey } from '../i18n'
+import { localizeCase, useI18n } from '../i18n/useI18n'
+import { Badge, Card, EmptyState, Input, ProgressBar, SectionHeader } from '../components/ui'
 import { DIFFICULTY_TONE } from './Dashboard'
+import type { Difficulty } from '../types'
+
+const INDUSTRY_ORDER = [...new Set(CASES.map((c) => c.industry))]
+
+const filterChip = (active: boolean) =>
+  `rounded-xl border px-3.5 py-1.5 text-xs font-semibold transition-all ${
+    active
+      ? 'border-indigo-400/60 bg-indigo-500/10 text-indigo-600 dark:border-indigo-300/40 dark:text-indigo-300'
+      : 'border-slate-200 bg-white text-muted hover:border-indigo-300 hover:text-slate-700 dark:border-white/10 dark:bg-white/[0.03] dark:hover:border-indigo-400/40 dark:hover:text-slate-200'
+  }`
 
 export default function Cases() {
   const { data } = useApp()
+  const { t, lang } = useI18n()
   const navigate = useNavigate()
-  const [query, setQuery] = useState('')
-  const [category, setCategory] = useState('all')
-  const [difficulty, setDifficulty] = useState('all')
+  const [q, setQ] = useState('')
+  const [industry, setIndustry] = useState<string | null>(null)
+  const [difficulty, setDifficulty] = useState<Difficulty | null>(null)
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    return CASES.filter((c) => {
-      if (category !== 'all' && c.industry !== category) return false
-      if (difficulty !== 'all' && c.difficulty !== difficulty) return false
-      if (q && !`${c.title} ${c.industry} ${c.tagline} ${c.description}`.toLowerCase().includes(q)) return false
-      return true
+    const query = q.trim().toLowerCase()
+    return CASES.map((c) => localizeCase(c, lang)).filter((c) => {
+      if (industry && c.industry !== industry) return false
+      if (difficulty && c.difficulty !== difficulty) return false
+      if (!query) return true
+      return `${c.title} ${c.tagline} ${c.industry} ${t(INDUSTRY_KEYS[c.industry])} ${c.objectives.join(' ')}`
+        .toLowerCase()
+        .includes(query)
     })
-  }, [query, category, difficulty])
+  }, [q, industry, difficulty, t, lang])
 
   return (
     <div className="space-y-6">
-      <div>
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-500 dark:text-cyan-300">
-          Simulation Library
+          {t('cases.kicker')}
         </p>
         <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-          Choose Your Case
+          {t('cases.title')}
         </h1>
-        <p className="mt-1.5 max-w-2xl text-sm text-muted">
-          Each case is a real-world style engagement. Investigate the organization, analyze its problems, and design a
-          professional solution.
-        </p>
-      </div>
+        <p className="mt-1.5 max-w-2xl text-sm text-muted">{t('cases.subtitle')}</p>
+      </motion.div>
 
-      {/* Filters */}
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      {/* Search + filters */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.05 }}
+        className="space-y-3"
+      >
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search cases by name, industry, or problem…"
-            aria-label="Search cases"
-            className="pl-9"
+            className="pl-10"
+            placeholder={t('cases.searchPlaceholder')}
+            aria-label={t('cases.searchAria')}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {CASE_CATEGORIES.map((c) => (
+          <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted">
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            {t('cases.filters')}
+          </span>
+          <div className="h-4 w-px bg-slate-200 dark:bg-white/10" />
+          <span className="text-[11px] font-semibold text-muted">{t('cases.industryLabel')}</span>
+          <button className={filterChip(industry === null)} onClick={() => setIndustry(null)}>
+            {t('cases.all')}
+          </button>
+          {INDUSTRY_ORDER.map((ind) => (
             <button
-              key={c.id}
-              onClick={() => setCategory(c.id)}
-              className={cn(
-                'rounded-full border px-3 py-1.5 text-xs font-semibold transition-all',
-                category === c.id
-                  ? 'border-indigo-400/60 bg-indigo-500/10 text-indigo-600 dark:border-indigo-400/40 dark:bg-indigo-400/10 dark:text-indigo-300'
-                  : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400 dark:hover:text-slate-200',
-              )}
+              key={ind}
+              className={filterChip(industry === ind)}
+              onClick={() => setIndustry(industry === ind ? null : ind)}
             >
-              {c.label}
+              {t(INDUSTRY_KEYS[ind])}
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2">
-          <SlidersHorizontal className="h-4 w-4 text-slate-400" aria-hidden />
-          <select
-            value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value)}
-            aria-label="Filter by difficulty"
-            className="input w-auto py-1.5 text-xs font-semibold"
-          >
-            <option value="all">All levels</option>
-            <option value="Beginner">Beginner</option>
-            <option value="Intermediate">Intermediate</option>
-            <option value="Advanced">Advanced</option>
-          </select>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold text-muted">{t('cases.difficultyLabel')}</span>
+          {(['Beginner', 'Intermediate', 'Advanced'] as Difficulty[]).map((d) => (
+            <button
+              key={d}
+              className={filterChip(difficulty === d)}
+              onClick={() => setDifficulty(difficulty === d ? null : d)}
+            >
+              {t(DIFF_KEYS[d])}
+            </button>
+          ))}
+          <span className="ml-auto text-xs font-semibold text-muted">
+            {t('cases.showing', { count: filtered.length, total: CASES.length })}
+          </span>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Grid */}
       {filtered.length === 0 ? (
-        <EmptyState icon={Search} title="No cases match your filters." description="Try a different search term or category." />
+        <EmptyState
+          icon={Search}
+          title={t('cases.noMatch')}
+          description={t('cases.noMatchDesc')}
+        />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 sm:gap-5 md:grid-cols-2">
           {filtered.map((c, i) => {
             const analysis = data.analyses[c.id]
             const pct = analysis ? computeOverallProgress(analysis) : 0
             return (
               <motion.div
                 key={c.id}
-                initial={{ opacity: 0, y: 14 }}
+                initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04, duration: 0.3 }}
+                transition={{ duration: 0.35, delay: 0.04 * i }}
               >
-                <Card hover className="flex h-full flex-col p-5" onClick={() => navigate(`/cases/${c.id}`)}>
-                  <div className="flex items-start justify-between">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/15 to-cyan-400/10 text-indigo-500 dark:text-indigo-300">
-                      <c.icon className="h-5.5 w-5.5" />
+                <Card hover className="flex h-full flex-col p-5 sm:p-6" onClick={() => navigate(`/cases/${c.id}`)}>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/15 to-cyan-400/10 text-indigo-500 dark:text-indigo-300">
+                      <c.icon className="h-6 w-6" />
                     </span>
-                    <div className="flex flex-col items-end gap-1.5">
-                      <Badge tone={DIFFICULTY_TONE[c.difficulty]}>{c.difficulty}</Badge>
-                      {analysis && (
-                        <Badge tone={analysis.status === 'completed' ? 'emerald' : 'cyan'}>
-                          {analysis.status === 'completed'
-                            ? `Score ${analysis.evaluation?.total ?? '—'}`
-                            : `${pct}% done`}
-                        </Badge>
-                      )}
+                    <div className="flex flex-wrap justify-end gap-1.5">
+                      <Badge>{t(INDUSTRY_KEYS[c.industry])}</Badge>
+                      <Badge tone={DIFFICULTY_TONE[c.difficulty]}>{t(DIFF_KEYS[c.difficulty])}</Badge>
                     </div>
                   </div>
+                  <h3 className="mt-4 font-display text-lg font-semibold text-slate-900 dark:text-white">{c.title}</h3>
+                  <p className="mt-1 line-clamp-2 flex-1 text-sm leading-relaxed text-muted">{c.tagline}</p>
 
-                  <h3 className="mt-3.5 font-display text-base font-semibold text-slate-900 dark:text-white">
-                    {c.title}
-                  </h3>
-                  <p className="mt-0.5 text-xs font-medium text-indigo-500/90 dark:text-cyan-300/90">{c.tagline}</p>
-                  <p className="mt-2 line-clamp-3 flex-1 text-sm leading-relaxed text-muted">{c.description}</p>
+                  {analysis ? (
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="flex items-center gap-1.5 font-semibold">
+                          {analysis.status === 'completed' && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
+                          {analysis.status === 'completed' ? (
+                            <span className="text-emerald-500">
+                              {analysis.evaluation
+                                ? `${t('status.completed')} · ${t('dash.score', { score: analysis.evaluation.total })}`
+                                : t('status.completed')}
+                            </span>
+                          ) : (
+                            <span className="text-cyan-500 dark:text-cyan-300">
+                              {t('status.inProgress')} · {relativeTime(analysis.updatedAt, lang)}
+                            </span>
+                          )}
+                        </span>
+                        <span className="font-bold text-muted">{pct}%</span>
+                      </div>
+                      <ProgressBar value={pct} />
+                    </div>
+                  ) : (
+                    <div className="mt-4 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      {t('cases.notStarted')}
+                    </div>
+                  )}
 
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {c.skills.slice(0, 3).map((s) => (
-                      <span
-                        key={s}
-                        className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-white/[0.05] dark:text-slate-400"
-                      >
-                        {s}
-                      </span>
-                    ))}
-                    {c.skills.length > 3 && (
-                      <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 dark:bg-white/[0.05] dark:text-slate-500">
-                        +{c.skills.length - 3}
+                  <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 dark:border-white/[0.06]">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+                      {t('cases.objectivesCount', { count: c.objectives.length })}
+                    </span>
+                    {analysis ? (
+                      <Badge tone="cyan">
+                        <RotateCcw className="h-3 w-3" />
+                        {t('common.continue')}
+                      </Badge>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-500 transition group-hover:gap-2 dark:text-indigo-300">
+                        {t('cases.viewCase')} <ArrowRight className="h-3.5 w-3.5" />
                       </span>
                     )}
-                  </div>
-
-                  <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3.5 dark:border-white/[0.06]">
-                    <div className="flex items-center gap-3 text-[11px] font-medium text-muted">
-                      <span className="inline-flex items-center gap-1">
-                        <Award className="h-3.5 w-3.5" /> {c.industry}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5" /> {c.estimatedTime}
-                      </span>
-                    </div>
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-500 dark:text-indigo-300">
-                      {analysis ? 'Continue' : 'Start Case'} <ArrowRight className="h-3.5 w-3.5" />
-                    </span>
                   </div>
                 </Card>
               </motion.div>
@@ -159,12 +188,15 @@ export default function Cases() {
         </div>
       )}
 
-      <p className="text-center text-xs text-muted">
-        6 built-in scenarios · Your progress on each case is saved automatically.{' '}
-        <Link to="/my-analyses" className="font-semibold text-indigo-500 hover:underline dark:text-indigo-300">
-          View my analyses
-        </Link>
-      </p>
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="flex items-center gap-2 text-xs text-muted"
+      >
+        <Lightbulb className="h-3.5 w-3.5 text-amber-400" />
+        {t('cases.tip')}
+      </motion.p>
     </div>
   )
 }

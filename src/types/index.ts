@@ -228,6 +228,7 @@ export interface Profile {
 
 export interface Settings {
   theme: Theme
+  language: 'en' | 'id'
 }
 
 export interface AppData {

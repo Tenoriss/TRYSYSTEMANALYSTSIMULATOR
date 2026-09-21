@@ -35,13 +35,23 @@ import { useToast } from '../../context/ToastContext'
 import type { AnalysisCtx } from '../AnalysisLayout'
 import { XP } from '../../lib/scoring'
 import { cn, nowISO, uid } from '../../lib/utils'
+import type { TranslationKey } from '../../i18n'
+import { useI18n } from '../../i18n/useI18n'
 import type { AsIsToBe, ProcessStep, ProcessStepType, UseCase } from '../../types'
+
+const STEP_TYPE_KEYS: Record<ProcessStepType, TranslationKey> = {
+  start: 'fl.start',
+  process: 'fl.process',
+  decision: 'fl.decision',
+  end: 'fl.end',
+}
 
 type Tab = 'usecases' | 'flow' | 'asistobe'
 
 /* ------------------------------ Use Case SVG ------------------------------ */
 
 function UseCaseDiagram({ useCases }: { useCases: UseCase[] }) {
+  const { t } = useI18n()
   const actors = useMemo(() => [...new Set(useCases.map((u) => u.actor.trim()).filter(Boolean))], [useCases])
   if (useCases.length === 0) return null
 
@@ -55,13 +65,13 @@ function UseCaseDiagram({ useCases }: { useCases: UseCase[] }) {
 
   return (
     <Card className="overflow-x-auto p-5">
-      <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">Use Case Diagram</h3>
-      <p className="mt-0.5 text-xs text-muted">Generated automatically from your use cases.</p>
-      <svg viewBox={`0 0 780 ${H}`} className="mt-4 min-w-[640px]" role="img" aria-label="Use case diagram">
+      <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">{t('md.diagramTitle')}</h3>
+      <p className="mt-0.5 text-xs text-muted">{t('md.diagramDesc')}</p>
+      <svg viewBox={`0 0 780 ${H}`} className="mt-4 min-w-[640px]" role="img" aria-label={t('md.diagramAria')}>
         {/* System boundary */}
         <rect x={280} y={boundaryTop} width={470} height={boundaryH} rx={16} className="fill-slate-50 stroke-slate-200 dark:fill-white/[0.02] dark:stroke-white/10" />
         <text x={515} y={boundaryTop + 26} textAnchor="middle" className="fill-slate-400 text-[11px] font-bold dark:fill-slate-500" style={{ fontSize: 11 }}>
-          PROPOSED SYSTEM
+          {t('md.systemBoundary')}
         </text>
 
         {/* Links */}
@@ -142,6 +152,7 @@ const EMPTY_UC: UCForm = {
 export default function Modeling() {
   const { analysis } = useOutletContext<AnalysisCtx>()
   const { updateAnalysis } = useApp()
+  const { t } = useI18n()
   const toast = useToast()
   const [tab, setTab] = useState<Tab>('usecases')
 
@@ -159,30 +170,30 @@ export default function Modeling() {
 
   const saveUC = () => {
     if (!ucForm.actor.trim() || !ucForm.name.trim()) {
-      toast.warning('Please complete the required fields', 'Actor and use case name are required.')
+      toast.warning(t('common.requiredFields'), t('uc.nameActorRequired'))
       return
     }
     if (editingUC) {
       updateAnalysis(analysis.caseId, (d) => {
         d.useCases = d.useCases.map((u) => (u.id === editingUC.id ? { ...u, ...ucForm } : u))
       })
-      toast.success('Use case updated', ucForm.name)
+      toast.success(t('md.ucUpdated'), ucForm.name)
     } else {
       updateAnalysis(
         analysis.caseId,
         (d) => {
           d.useCases.push({ id: uid(), ...ucForm, createdAt: nowISO() })
         },
-        { amount: XP.useCase, label: 'Use case created' },
+        { amount: XP.useCase, label: t('xp.useCase') },
       )
-      toast.success('Use case created', ucForm.name)
+      toast.success(t('md.ucCreated'), ucForm.name)
     }
     setUCModal(false)
   }
 
   const saveStep = () => {
     if (!stepLabel.trim()) {
-      toast.warning('Please complete the required fields', 'Step label is required.')
+      toast.warning(t('common.requiredFields'), t('fl.labelRequired'))
       return
     }
     if (editingStep) {
@@ -191,14 +202,14 @@ export default function Modeling() {
           s.id === editingStep.id ? { ...s, type: stepType, label: stepLabel, note: stepNote } : s,
         )
       })
-      toast.success('Step updated')
+      toast.success(t('fl.updated'))
     } else {
       updateAnalysis(
         analysis.caseId,
         (d) => {
           d.processSteps.push({ id: uid(), type: stepType, label: stepLabel, note: stepNote })
         },
-        { amount: XP.processStep, label: 'Process step added' },
+        { amount: XP.processStep, label: t('xp.processStep') },
       )
     }
     setFlowModal(false)
@@ -224,17 +235,17 @@ export default function Modeling() {
     updateAnalysis(analysis.caseId, (d) => {
       d.asIsToBe = { ...d.asIsToBe, ...patch }
     })
-    toast.success('Analysis saved')
+    toast.success(t('common.analysisSaved'))
   }
 
   return (
     <div className="space-y-5">
       <SectionHeader
-        title="System Modeling"
-        subtitle="Model how actors will interact with the solution and how work flows through it."
+        title={t('md.title')}
+        subtitle={t('md.subtitle')}
         action={
           <Segmented<Tab>
-            ariaLabel="Modeling sections"
+            ariaLabel={t('md.sectionsAria')}
             value={tab}
             onChange={setTab}
             options={[
@@ -242,7 +253,7 @@ export default function Modeling() {
                 value: 'usecases',
                 label: (
                   <span className="inline-flex items-center gap-1.5">
-                    <User className="h-3.5 w-3.5" /> Use Cases ({analysis.useCases.length})
+                    <User className="h-3.5 w-3.5" /> {t('md.tabUC', { count: analysis.useCases.length })}
                   </span>
                 ),
               },
@@ -250,7 +261,7 @@ export default function Modeling() {
                 value: 'flow',
                 label: (
                   <span className="inline-flex items-center gap-1.5">
-                    <GitBranch className="h-3.5 w-3.5" /> Process Flow ({analysis.processSteps.length})
+                    <GitBranch className="h-3.5 w-3.5" /> {t('md.tabFlow', { count: analysis.processSteps.length })}
                   </span>
                 ),
               },
@@ -258,7 +269,7 @@ export default function Modeling() {
                 value: 'asistobe',
                 label: (
                   <span className="inline-flex items-center gap-1.5">
-                    <ArrowLeftRight className="h-3.5 w-3.5" /> AS-IS vs TO-BE
+                    <ArrowLeftRight className="h-3.5 w-3.5" /> {t('md.tabAsIs')}
                   </span>
                 ),
               },
@@ -273,7 +284,9 @@ export default function Modeling() {
           <UseCaseDiagram useCases={analysis.useCases} />
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-muted">
-              {analysis.useCases.length === 0 ? 'No use cases defined yet' : `${analysis.useCases.length} use case${analysis.useCases.length > 1 ? 's' : ''}`}
+              {analysis.useCases.length === 0
+                ? t('md.ucNone')
+                : t('md.ucCount', { count: analysis.useCases.length, s: analysis.useCases.length > 1 ? 's' : '' })}
             </p>
             <Button
               size="sm"
@@ -284,14 +297,14 @@ export default function Modeling() {
                 setUCModal(true)
               }}
             >
-              Add Use Case
+              {t('md.addUC')}
             </Button>
           </div>
           {analysis.useCases.length === 0 ? (
             <EmptyState
               icon={User}
-              title="No use cases yet."
-              description="Describe how each actor will use the proposed system — name, flow, and outcomes."
+              title={t('md.ucEmptyTitle')}
+              description={t('md.ucEmptyDesc')}
               action={
                 <Button
                   size="sm"
@@ -302,7 +315,7 @@ export default function Modeling() {
                     setUCModal(true)
                   }}
                 >
-                  Create First Use Case
+                  {t('md.ucAddFirst')}
                 </Button>
               }
             />
@@ -317,7 +330,7 @@ export default function Modeling() {
                       </span>
                       <div>
                         <h3 className="font-semibold text-slate-900 dark:text-white">{u.name}</h3>
-                        <p className="text-xs text-muted">Actor: {u.actor}</p>
+                        <p className="text-xs text-muted">{t('md.actor', { actor: u.actor })}</p>
                       </div>
                     </div>
                     <div className="flex shrink-0 gap-1">
@@ -335,8 +348,8 @@ export default function Modeling() {
                           })
                           setUCModal(true)
                         }}
-                        aria-label={`Edit use case ${u.name}`}
-                        title="Edit"
+                        aria-label={`${t('common.edit')} ${u.name}`}
+                        title={t('common.edit')}
                         className="icon-btn h-8 w-8"
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -346,10 +359,10 @@ export default function Modeling() {
                           updateAnalysis(analysis.caseId, (d) => {
                             d.useCases = d.useCases.filter((x) => x.id !== u.id)
                           })
-                          toast.info('Use case removed')
+                          toast.info(t('md.ucRemoved'))
                         }}
-                        aria-label={`Delete use case ${u.name}`}
-                        title="Delete"
+                        aria-label={`${t('common.delete')} ${u.name}`}
+                        title={t('common.delete')}
                         className="icon-btn h-8 w-8 hover:!bg-rose-500/10 hover:!text-rose-500"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -360,25 +373,25 @@ export default function Modeling() {
                   <dl className="mt-3 space-y-2 text-xs">
                     {u.preconditions && (
                       <div className="rounded-lg bg-slate-50 p-2.5 dark:bg-white/[0.03]">
-                        <dt className="font-bold uppercase tracking-wide text-[10px] text-slate-400">Preconditions</dt>
+                        <dt className="font-bold uppercase tracking-wide text-[10px] text-slate-400">{t('uc.preconditions')}</dt>
                         <dd className="mt-1 whitespace-pre-line leading-relaxed text-slate-600 dark:text-slate-300">{u.preconditions}</dd>
                       </div>
                     )}
                     {u.mainFlow && (
                       <div className="rounded-lg bg-indigo-500/[0.06] p-2.5 dark:bg-indigo-400/[0.07]">
-                        <dt className="font-bold uppercase tracking-wide text-[10px] text-indigo-500 dark:text-indigo-300">Main flow</dt>
+                        <dt className="font-bold uppercase tracking-wide text-[10px] text-indigo-500 dark:text-indigo-300">{t('uc.mainFlow')}</dt>
                         <dd className="mt-1 whitespace-pre-line leading-relaxed text-slate-600 dark:text-slate-300">{u.mainFlow}</dd>
                       </div>
                     )}
                     {u.alternativeFlow && (
                       <div className="rounded-lg bg-slate-50 p-2.5 dark:bg-white/[0.03]">
-                        <dt className="font-bold uppercase tracking-wide text-[10px] text-amber-500">Alternative flow</dt>
+                        <dt className="font-bold uppercase tracking-wide text-[10px] text-amber-500">{t('uc.altFlow')}</dt>
                         <dd className="mt-1 whitespace-pre-line leading-relaxed text-slate-600 dark:text-slate-300">{u.alternativeFlow}</dd>
                       </div>
                     )}
                     {u.postconditions && (
                       <div className="rounded-lg bg-slate-50 p-2.5 dark:bg-white/[0.03]">
-                        <dt className="font-bold uppercase tracking-wide text-[10px] text-emerald-500">Postconditions</dt>
+                        <dt className="font-bold uppercase tracking-wide text-[10px] text-emerald-500">{t('uc.postconditions')}</dt>
                         <dd className="mt-1 whitespace-pre-line leading-relaxed text-slate-600 dark:text-slate-300">{u.postconditions}</dd>
                       </div>
                     )}
@@ -395,7 +408,7 @@ export default function Modeling() {
         <div className="grid gap-5 xl:grid-cols-5">
           <div className="space-y-3 xl:col-span-2">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-muted">Flow steps</p>
+              <p className="text-sm font-semibold text-muted">{t('fl.steps')}</p>
               <Button
                 size="sm"
                 icon={Plus}
@@ -407,14 +420,14 @@ export default function Modeling() {
                   setFlowModal(true)
                 }}
               >
-                Add Step
+                {t('fl.addStep')}
               </Button>
             </div>
             {analysis.processSteps.length === 0 ? (
               <EmptyState
                 icon={GitBranch}
-                title="No process steps yet."
-                description="Map the target process step by step: start, activities, decisions, and end states."
+                title={t('fl.emptyTitle')}
+                description={t('fl.emptyDesc')}
                 action={
                   <Button
                     size="sm"
@@ -425,7 +438,7 @@ export default function Modeling() {
                       setFlowModal(true)
                     }}
                   >
-                    Add First Step
+                    {t('fl.addFirst')}
                   </Button>
                 }
               />
@@ -438,17 +451,17 @@ export default function Modeling() {
                     }
                     className="w-[74px] justify-center"
                   >
-                    {s.type}
+                    {t(STEP_TYPE_KEYS[s.type])}
                   </Badge>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{s.label}</p>
                     {s.note && <p className="truncate text-[11px] text-muted">{s.note}</p>}
                   </div>
                   <div className="flex shrink-0 gap-0.5">
-                    <button onClick={() => moveStep(s.id, -1)} disabled={i === 0} aria-label="Move step up" title="Move up" className="icon-btn h-7 w-7 disabled:opacity-30">
+                    <button onClick={() => moveStep(s.id, -1)} disabled={i === 0} aria-label={t('common.moveUp')} title={t('common.moveUp')} className="icon-btn h-7 w-7 disabled:opacity-30">
                       <MoveUp className="h-3.5 w-3.5" />
                     </button>
-                    <button onClick={() => moveStep(s.id, 1)} disabled={i === analysis.processSteps.length - 1} aria-label="Move step down" title="Move down" className="icon-btn h-7 w-7 disabled:opacity-30">
+                    <button onClick={() => moveStep(s.id, 1)} disabled={i === analysis.processSteps.length - 1} aria-label={t('common.moveDown')} title={t('common.moveDown')} className="icon-btn h-7 w-7 disabled:opacity-30">
                       <MoveDown className="h-3.5 w-3.5" />
                     </button>
                     <button
@@ -459,8 +472,8 @@ export default function Modeling() {
                         setStepNote(s.note)
                         setFlowModal(true)
                       }}
-                      aria-label="Edit step"
-                      title="Edit"
+                      aria-label={t('common.edit')}
+                      title={t('common.edit')}
                       className="icon-btn h-7 w-7"
                     >
                       <Pencil className="h-3.5 w-3.5" />
@@ -470,10 +483,10 @@ export default function Modeling() {
                         updateAnalysis(analysis.caseId, (d) => {
                           d.processSteps = d.processSteps.filter((x) => x.id !== s.id)
                         })
-                        toast.info('Step removed')
+                        toast.info(t('fl.removed'))
                       }}
-                      aria-label="Delete step"
-                      title="Delete"
+                      aria-label={t('common.delete')}
+                      title={t('common.delete')}
                       className="icon-btn h-7 w-7 hover:!bg-rose-500/10 hover:!text-rose-500"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -487,9 +500,9 @@ export default function Modeling() {
           {/* Flow visualization */}
           <div className="xl:col-span-3">
             <Card className="p-6">
-              <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">Process Visualization</h3>
+              <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">{t('fl.vizTitle')}</h3>
               {analysis.processSteps.length === 0 ? (
-                <p className="mt-3 text-sm text-muted">Add steps to see the flow rendered here.</p>
+                <p className="mt-3 text-sm text-muted">{t('fl.vizEmpty')}</p>
               ) : (
                 <div className="mx-auto mt-5 flex max-w-sm flex-col items-center">
                   {analysis.processSteps.map((s, i) => (
@@ -530,7 +543,7 @@ export default function Modeling() {
               )}
               {analysis.processSteps.length > 0 && (
                 <p className="mt-5 flex items-center justify-center gap-1.5 text-center text-[11px] text-muted">
-                  <RotateCcw className="h-3 w-3" /> Decision notes appear on the connecting arrows.
+                  <RotateCcw className="h-3 w-3" /> {t('fl.noteHint')}
                 </p>
               )}
             </Card>
@@ -543,10 +556,7 @@ export default function Modeling() {
         <div className="space-y-4">
           <Card className="flex items-center gap-3 border-indigo-200/70 bg-indigo-500/[0.05] p-4 dark:border-indigo-400/20 dark:bg-indigo-400/[0.06]">
             <ChevronsDownUp className="h-5 w-5 shrink-0 text-indigo-500 dark:text-indigo-300" />
-            <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-              Contrast the current reality with your proposed future. A sharp AS-IS / TO-BE comparison is the
-              backbone of your final report. Changes are saved when you leave a field.
-            </p>
+            <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">{t('at.tip')}</p>
           </Card>
           <div className="relative grid gap-4 lg:grid-cols-2">
             <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 hidden h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400 text-white shadow-lg shadow-indigo-500/40 lg:flex">
@@ -556,22 +566,22 @@ export default function Modeling() {
             <Card className="p-5">
               <div className="flex items-center gap-2">
                 <Badge tone="rose">AS-IS</Badge>
-                <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">Current System</h3>
+                <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">{t('at.currentSystem')}</h3>
               </div>
               <div className="mt-4 space-y-4">
                 {(
                   [
-                    ['currentProcess', 'Current process', 'How does work flow today, step by step?'],
-                    ['currentProblems', 'Current problems', 'What hurts the most today?'],
-                    ['currentTools', 'Current tools', 'Paper ledgers, spreadsheets, phone calls…'],
-                    ['bottlenecks', 'Bottlenecks', 'Where does work pile up or stall?'],
-                  ] as [keyof AsIsToBe, string, string][]
-                ).map(([key, label, ph]) => (
-                  <Field key={key} label={label}>
+                    ['currentProcess', 'at.currentProcess', 'at.currentProcessPh'],
+                    ['currentProblems', 'at.currentProblems', 'at.currentProblemsPh'],
+                    ['currentTools', 'at.currentTools', 'at.currentToolsPh'],
+                    ['bottlenecks', 'at.bottlenecks', 'at.bottlenecksPh'],
+                  ] as [keyof AsIsToBe, TranslationKey, TranslationKey][]
+                ).map(([key, labelKey, phKey]) => (
+                  <Field key={key} label={t(labelKey)}>
                     <Textarea
                       defaultValue={analysis.asIsToBe[key]}
-                      placeholder={ph}
-                      aria-label={`AS-IS: ${label}`}
+                      placeholder={t(phKey)}
+                      aria-label={`AS-IS: ${t(labelKey)}`}
                       onBlur={(e) => {
                         if (e.target.value !== analysis.asIsToBe[key]) saveAsIsToBe({ [key]: e.target.value })
                       }}
@@ -584,22 +594,22 @@ export default function Modeling() {
             <Card className="border-emerald-200/60 p-5 dark:border-emerald-400/15">
               <div className="flex items-center gap-2">
                 <Badge tone="emerald">TO-BE</Badge>
-                <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">Proposed System</h3>
+                <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">{t('at.proposedSystem')}</h3>
               </div>
               <div className="mt-4 space-y-4">
                 {(
                   [
-                    ['proposedProcess', 'Proposed process', 'How will work flow in the new system?'],
-                    ['newSystem', 'New system', 'What will the system do? Core capabilities…'],
-                    ['improvements', 'Improvements', 'What specifically gets better, and by how much?'],
-                    ['expectedBenefits', 'Expected benefits', 'Time saved, errors reduced, revenue protected…'],
-                  ] as [keyof AsIsToBe, string, string][]
-                ).map(([key, label, ph]) => (
-                  <Field key={key} label={label}>
+                    ['proposedProcess', 'at.proposedProcess', 'at.proposedProcessPh'],
+                    ['newSystem', 'at.newSystem', 'at.newSystemPh'],
+                    ['improvements', 'at.improvements', 'at.improvementsPh'],
+                    ['expectedBenefits', 'at.expectedBenefits', 'at.expectedBenefitsPh'],
+                  ] as [keyof AsIsToBe, TranslationKey, TranslationKey][]
+                ).map(([key, labelKey, phKey]) => (
+                  <Field key={key} label={t(labelKey)}>
                     <Textarea
                       defaultValue={analysis.asIsToBe[key]}
-                      placeholder={ph}
-                      aria-label={`TO-BE: ${label}`}
+                      placeholder={t(phKey)}
+                      aria-label={`TO-BE: ${t(labelKey)}`}
                       onBlur={(e) => {
                         if (e.target.value !== analysis.asIsToBe[key]) saveAsIsToBe({ [key]: e.target.value })
                       }}
@@ -613,66 +623,69 @@ export default function Modeling() {
       )}
 
       {/* Use case modal */}
-      <Modal open={ucModal} onClose={() => setUCModal(false)} title={editingUC ? 'Edit Use Case' : 'New Use Case'} subtitle="How does an actor achieve a goal with the system?" wide>
+      <Modal open={ucModal} onClose={() => setUCModal(false)} title={editingUC ? t('md.ucEditTitle') : t('md.ucNewTitle')} subtitle={t('md.ucModalSub')} wide>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Actor *">
-            <Input value={ucForm.actor} onChange={(e) => setUCForm({ ...ucForm, actor: e.target.value })} placeholder="e.g. Cashier" list="uc-actors" aria-label="Actor" />
+          <Field label={t('uc.actor')}>
+            <Input value={ucForm.actor} onChange={(e) => setUCForm({ ...ucForm, actor: e.target.value })} placeholder={t('uc.actorPh')} list="uc-actors" aria-label={t('uc.actorAria')} />
             <datalist id="uc-actors">
               {analysis.stakeholders.map((s) => (
                 <option key={s.id} value={s.name} />
               ))}
             </datalist>
           </Field>
-          <Field label="Use case name *">
-            <Input value={ucForm.name} onChange={(e) => setUCForm({ ...ucForm, name: e.target.value })} placeholder="e.g. Record Stock Adjustment" aria-label="Use case name" />
+          <Field label={t('uc.name')}>
+            <Input value={ucForm.name} onChange={(e) => setUCForm({ ...ucForm, name: e.target.value })} placeholder={t('uc.namePh')} aria-label={t('uc.nameAria')} />
           </Field>
-          <Field label="Description" className="sm:col-span-2">
-            <Textarea value={ucForm.description} onChange={(e) => setUCForm({ ...ucForm, description: e.target.value })} placeholder="What goal does this use case accomplish?" className="min-h-[60px]" />
+          <Field label={t('uc.description')} className="sm:col-span-2">
+            <Textarea value={ucForm.description} onChange={(e) => setUCForm({ ...ucForm, description: e.target.value })} placeholder={t('uc.descriptionPh')} className="min-h-[60px]" />
           </Field>
-          <Field label="Preconditions">
-            <Textarea value={ucForm.preconditions} onChange={(e) => setUCForm({ ...ucForm, preconditions: e.target.value })} placeholder={'One per line\ne.g. User is logged in'} className="min-h-[70px]" />
+          <Field label={t('uc.preconditions')}>
+            <Textarea value={ucForm.preconditions} onChange={(e) => setUCForm({ ...ucForm, preconditions: e.target.value })} placeholder={t('uc.preconditionsPh')} className="min-h-[70px]" />
           </Field>
-          <Field label="Postconditions">
-            <Textarea value={ucForm.postconditions} onChange={(e) => setUCForm({ ...ucForm, postconditions: e.target.value })} placeholder={'What is true when this succeeds?'} className="min-h-[70px]" />
+          <Field label={t('uc.postconditions')}>
+            <Textarea value={ucForm.postconditions} onChange={(e) => setUCForm({ ...ucForm, postconditions: e.target.value })} placeholder={t('uc.postconditionsPh')} className="min-h-[70px]" />
           </Field>
-          <Field label="Main flow" hint="One step per line">
-            <Textarea value={ucForm.mainFlow} onChange={(e) => setUCForm({ ...ucForm, mainFlow: e.target.value })} placeholder={'1. Actor opens stock screen\n2. Actor scans item\n3. System shows current stock'} className="min-h-[110px]" />
+          <Field label={t('uc.mainFlow')} hint={t('uc.mainFlowHint')}>
+            <Textarea value={ucForm.mainFlow} onChange={(e) => setUCForm({ ...ucForm, mainFlow: e.target.value })} placeholder={t('uc.mainFlowPh')} className="min-h-[110px]" />
           </Field>
-          <Field label="Alternative flow" hint="Exceptions and branches">
-            <Textarea value={ucForm.alternativeFlow} onChange={(e) => setUCForm({ ...ucForm, alternativeFlow: e.target.value })} placeholder={'2a. Item not found → actor creates it\n3a. Stock negative → warning shown'} className="min-h-[110px]" />
+          <Field label={t('uc.altFlow')} hint={t('uc.altFlowHint')}>
+            <Textarea value={ucForm.alternativeFlow} onChange={(e) => setUCForm({ ...ucForm, alternativeFlow: e.target.value })} placeholder={t('uc.altFlowPh')} className="min-h-[110px]" />
           </Field>
         </div>
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setUCModal(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
-          <Button onClick={saveUC} icon={Boxes}>{editingUC ? 'Save Changes' : 'Create Use Case'}</Button>
+          <Button onClick={saveUC} icon={Boxes}>{editingUC ? t('form.saveChanges') : t('uc.saveCreate')}</Button>
         </div>
       </Modal>
 
       {/* Flow step modal */}
-      <Modal open={flowModal} onClose={() => setFlowModal(false)} title={editingStep ? 'Edit Step' : 'Add Process Step'}>
+      <Modal open={flowModal} onClose={() => setFlowModal(false)} title={editingStep ? t('fl.editStep') : t('fl.addStepTitle')}>
         <div className="grid gap-4">
-          <Field label="Step type">
-            <Select value={stepType} onChange={(e) => setStepType(e.target.value as ProcessStepType)} options={[
-              { value: 'start', label: 'Start' },
-              { value: 'process', label: 'Process' },
-              { value: 'decision', label: 'Decision' },
-              { value: 'end', label: 'End' },
-            ]} aria-label="Step type" />
+          <Field label={t('fl.stepType')}>
+            <Select
+              value={stepType}
+              onChange={(e) => setStepType(e.target.value as ProcessStepType)}
+              options={(Object.keys(STEP_TYPE_KEYS) as ProcessStepType[]).map((k) => ({
+                value: k,
+                label: t(STEP_TYPE_KEYS[k]),
+              }))}
+              aria-label={t('fl.stepType')}
+            />
           </Field>
-          <Field label="Label *">
-            <Input value={stepLabel} onChange={(e) => setStepLabel(e.target.value)} placeholder={stepType === 'decision' ? 'e.g. Stock available?' : 'e.g. Check stock'} aria-label="Step label" />
+          <Field label={t('fl.stepLabel')}>
+            <Input value={stepLabel} onChange={(e) => setStepLabel(e.target.value)} placeholder={stepType === 'decision' ? t('fl.labelPhDecision') : t('fl.labelPhProcess')} aria-label={t('fl.stepLabelAria')} />
           </Field>
-          <Field label="Branch note" hint="Shown on the incoming arrow — e.g. YES / NO for decisions">
-            <Input value={stepNote} onChange={(e) => setStepNote(e.target.value)} placeholder="e.g. YES" aria-label="Branch note" />
+          <Field label={t('fl.branchNote')} hint={t('fl.branchNoteHint')}>
+            <Input value={stepNote} onChange={(e) => setStepNote(e.target.value)} placeholder={t('fl.branchNotePh')} aria-label={t('fl.branchNoteAria')} />
           </Field>
         </div>
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setFlowModal(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
-          <Button onClick={saveStep} icon={ListOrdered}>{editingStep ? 'Save Step' : 'Add Step'}</Button>
+          <Button onClick={saveStep} icon={ListOrdered}>{editingStep ? t('fl.saveStep') : t('fl.addStep')}</Button>
         </div>
       </Modal>
     </div>

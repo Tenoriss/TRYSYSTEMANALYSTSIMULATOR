@@ -8,11 +8,14 @@ import { useApp } from '../context/AppContext'
 import { getCase } from '../data/cases'
 import { computeOverallProgress } from '../lib/scoring'
 import { formatDate, relativeTime } from '../lib/utils'
+import { INDUSTRY_KEYS } from '../i18n'
+import { localizeCase, useI18n } from '../i18n/useI18n'
 
 type Filter = 'all' | 'in-progress' | 'completed'
 
 export default function MyAnalyses() {
   const { data, deleteAnalysis } = useApp()
+  const { t, lang } = useI18n()
   const navigate = useNavigate()
   const [filter, setFilter] = useState<Filter>('all')
   const [deleting, setDeleting] = useState<string | null>(null)
@@ -21,22 +24,22 @@ export default function MyAnalyses() {
     .filter((a) => filter === 'all' || a.status === filter)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
 
-  const deletingCase = deleting ? getCase(deleting) : undefined
+  const deletingCase = deleting ? localizeCase(getCase(deleting), lang) : undefined
 
   return (
     <div className="space-y-6">
       <SectionHeader
-        title="My Analyses"
-        subtitle="Every investigation you have started — continue, review, or clean up."
+        title={t('ma.title')}
+        subtitle={t('ma.subtitle')}
         action={
           <Segmented<Filter>
-            ariaLabel="Filter analyses"
+            ariaLabel={t('ma.filterAria')}
             value={filter}
             onChange={setFilter}
             options={[
-              { value: 'all', label: `All (${Object.keys(data.analyses).length})` },
-              { value: 'in-progress', label: 'In Progress' },
-              { value: 'completed', label: 'Completed' },
+              { value: 'all', label: t('ma.all', { count: Object.keys(data.analyses).length }) },
+              { value: 'in-progress', label: t('ma.inProgress') },
+              { value: 'completed', label: t('ma.completed') },
             ]}
           />
         }
@@ -45,34 +48,34 @@ export default function MyAnalyses() {
       {Object.keys(data.analyses).length === 0 ? (
         <EmptyState
           icon={Radar}
-          title="No analyses yet."
-          description="Pick a case from the library and your investigation workspace will appear here."
+          title={t('ma.emptyTitle')}
+          description={t('ma.emptyDesc')}
           action={
             <Link to="/cases">
-              <Button icon={Search}>Browse Case Library</Button>
+              <Button icon={Search}>{t('ma.browse')}</Button>
             </Link>
           }
         />
       ) : analyses.length === 0 ? (
-        <EmptyState icon={Search} title="Nothing in this filter." description="Try a different status filter." />
+        <EmptyState icon={Search} title={t('ma.emptyFilterTitle')} description={t('ma.emptyFilterDesc')} />
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="table-base min-w-[820px]">
               <thead>
                 <tr>
-                  <th>Case</th>
-                  <th className="w-28">Industry</th>
-                  <th className="w-44">Progress</th>
-                  <th className="w-24">Score</th>
-                  <th className="w-32">Status</th>
-                  <th className="w-36">Last updated</th>
-                  <th className="w-40 text-right">Actions</th>
+                  <th>{t('tbl.case')}</th>
+                  <th className="w-28">{t('tbl.industry')}</th>
+                  <th className="w-44">{t('tbl.progress')}</th>
+                  <th className="w-24">{t('tbl.score')}</th>
+                  <th className="w-32">{t('tbl.status')}</th>
+                  <th className="w-36">{t('tbl.lastUpdated')}</th>
+                  <th className="w-40 text-right">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {analyses.map((a, i) => {
-                  const c = getCase(a.caseId)
+                  const c = localizeCase(getCase(a.caseId), lang)
                   if (!c) return null
                   const pct = computeOverallProgress(a)
                   return (
@@ -89,11 +92,11 @@ export default function MyAnalyses() {
                           </span>
                           <div>
                             <p className="font-semibold text-slate-800 dark:text-slate-100">{c.title}</p>
-                            <p className="text-[11px] text-muted">Started {formatDate(a.startedAt)}</p>
+                            <p className="text-[11px] text-muted">{t('ma.started', { date: formatDate(a.startedAt, lang) })}</p>
                           </div>
                         </div>
                       </td>
-                      <td>{c.industry}</td>
+                      <td>{t(INDUSTRY_KEYS[c.industry])}</td>
                       <td>
                         <ProgressBar value={pct} showLabel />
                       </td>
@@ -106,17 +109,17 @@ export default function MyAnalyses() {
                       </td>
                       <td>
                         <Badge tone={a.status === 'completed' ? 'emerald' : 'cyan'}>
-                          {a.status === 'completed' ? 'Completed' : 'In Progress'}
+                          {t(a.status === 'completed' ? 'status.completed' : 'status.inProgress')}
                         </Badge>
                       </td>
-                      <td className="text-xs">{relativeTime(a.updatedAt)}</td>
+                      <td className="text-xs">{relativeTime(a.updatedAt, lang)}</td>
                       <td>
                         <div className="flex justify-end gap-1">
                           {a.status === 'completed' ? (
                             <button
                               onClick={() => navigate(`/analysis/${a.caseId}/report`)}
-                              aria-label={`View report for ${c.title}`}
-                              title="View report"
+                              aria-label={`${t('ma.viewReport')} — ${c.title}`}
+                              title={t('ma.viewReport')}
                               className="icon-btn h-8 w-8"
                             >
                               <Eye className="h-4 w-4" />
@@ -124,8 +127,8 @@ export default function MyAnalyses() {
                           ) : (
                             <button
                               onClick={() => navigate(`/analysis/${a.caseId}/${a.lastStep}`)}
-                              aria-label={`Continue ${c.title}`}
-                              title="Continue"
+                              aria-label={`${t('common.continue')} ${c.title}`}
+                              title={t('common.continue')}
                               className="icon-btn h-8 w-8 text-indigo-500 hover:!bg-indigo-500/10"
                             >
                               <PlayCircle className="h-4 w-4" />
@@ -133,16 +136,16 @@ export default function MyAnalyses() {
                           )}
                           <button
                             onClick={() => navigate(`/analysis/${a.caseId}/report`)}
-                            aria-label={`Open report for ${c.title}`}
-                            title="Report"
+                            aria-label={`${t('ma.report')} — ${c.title}`}
+                            title={t('ma.report')}
                             className="icon-btn h-8 w-8"
                           >
                             <FileText className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => setDeleting(a.caseId)}
-                            aria-label={`Delete analysis of ${c.title}`}
-                            title="Delete"
+                            aria-label={`${t('common.delete')} ${c.title}`}
+                            title={t('common.delete')}
                             className="icon-btn h-8 w-8 hover:!bg-rose-500/10 hover:!text-rose-500"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -162,9 +165,9 @@ export default function MyAnalyses() {
         open={deleting !== null}
         onClose={() => setDeleting(null)}
         onConfirm={() => deleting && deleteAnalysis(deleting)}
-        title="Delete this analysis?"
-        message={`This will permanently delete your entire analysis for “${deletingCase?.title ?? 'this case'}” — stakeholders, problems, requirements, models, and evaluation. This action cannot be undone.`}
-        confirmLabel="Delete Analysis"
+        title={t('ma.deleteTitle')}
+        message={t('ma.deleteMessage', { case: deletingCase?.title ?? '—' })}
+        confirmLabel={t('ma.deleteConfirm')}
       />
     </div>
   )

@@ -21,6 +21,9 @@ import { useToast } from '../../context/ToastContext'
 import type { AnalysisCtx } from '../AnalysisLayout'
 import { XP } from '../../lib/scoring'
 import { formatDateTime, initials, nowISO, uid } from '../../lib/utils'
+import { TRI_KEYS } from '../../i18n'
+import type { TranslationKey } from '../../i18n'
+import { useI18n } from '../../i18n/useI18n'
 import type { Level3, Stakeholder } from '../../types'
 
 const LEVELS: Level3[] = ['Low', 'Medium', 'High']
@@ -49,28 +52,29 @@ const EMPTY_FORM: StakeholderForm = {
 /* ------------------------------- Matrix ---------------------------------- */
 
 function InfluenceMatrix({ stakeholders }: { stakeholders: Stakeholder[] }) {
+  const { t } = useI18n()
   const order: Level3[] = ['High', 'Medium', 'Low']
-  const QUADRANT: Record<string, { label: string; cls: string }> = {
-    'High-High': { label: 'Manage closely', cls: 'bg-indigo-500/[0.08] dark:bg-indigo-400/[0.08]' },
-    'High-Medium': { label: 'Keep satisfied', cls: 'bg-cyan-400/[0.06] dark:bg-cyan-400/[0.05]' },
-    'High-Low': { label: 'Keep satisfied', cls: 'bg-cyan-400/[0.06] dark:bg-cyan-400/[0.05]' },
-    'Medium-High': { label: 'Keep informed', cls: 'bg-emerald-400/[0.06] dark:bg-emerald-400/[0.05]' },
-    'Low-Low': { label: 'Monitor', cls: 'bg-slate-400/[0.04] dark:bg-white/[0.02]' },
-    'Low-Medium': { label: 'Monitor', cls: 'bg-slate-400/[0.04] dark:bg-white/[0.02]' },
+  const QUADRANT: Record<string, { labelKey: TranslationKey; cls: string }> = {
+    'High-High': { labelKey: 'inv.manageClosely', cls: 'bg-indigo-500/[0.08] dark:bg-indigo-400/[0.08]' },
+    'High-Medium': { labelKey: 'inv.keepSatisfied', cls: 'bg-cyan-400/[0.06] dark:bg-cyan-400/[0.05]' },
+    'High-Low': { labelKey: 'inv.keepSatisfied', cls: 'bg-cyan-400/[0.06] dark:bg-cyan-400/[0.05]' },
+    'Medium-High': { labelKey: 'inv.keepInformed', cls: 'bg-emerald-400/[0.06] dark:bg-emerald-400/[0.05]' },
+    'Low-Low': { labelKey: 'inv.monitor', cls: 'bg-slate-400/[0.04] dark:bg-white/[0.02]' },
+    'Low-Medium': { labelKey: 'inv.monitor', cls: 'bg-slate-400/[0.04] dark:bg-white/[0.02]' },
   }
 
   return (
     <Card className="p-5">
-      <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">Interest × Influence Matrix</h3>
-      <p className="mt-0.5 text-xs text-muted">Position stakeholders to decide your engagement strategy.</p>
+      <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">{t('inv.matrixTitle')}</h3>
+      <p className="mt-0.5 text-xs text-muted">{t('inv.matrixDesc')}</p>
       <div className="mt-4 flex gap-2">
         <div className="flex w-20 shrink-0 flex-col justify-between py-1 text-right">
           {order.map((inf) => (
             <span key={inf} className="flex h-24 items-center justify-end text-[10px] font-bold uppercase tracking-wide text-muted">
-              {inf}
+              {t(TRI_KEYS[inf])}
             </span>
           ))}
-          <span className="pb-1 text-[9px] font-bold uppercase tracking-wide text-muted">Influence</span>
+          <span className="pb-1 text-[9px] font-bold uppercase tracking-wide text-muted">{t('inv.influence')}</span>
         </div>
         <div className="flex-1">
           <div className="grid grid-cols-3 gap-1.5">
@@ -82,11 +86,11 @@ function InfluenceMatrix({ stakeholders }: { stakeholders: Stakeholder[] }) {
                   <div
                     key={`${inf}-${interest}`}
                     className={`relative flex h-24 flex-wrap content-start gap-1 overflow-hidden rounded-lg border border-slate-200/80 p-1.5 dark:border-white/[0.06] ${q?.cls ?? ''}`}
-                    title={`Influence: ${inf} · Interest: ${interest}`}
+                    title={`${t('inv.influence')}: ${t(TRI_KEYS[inf])} · ${t('inv.interest')}: ${t(TRI_KEYS[interest])}`}
                   >
                     {q && (
                       <span className="pointer-events-none absolute bottom-1 right-1.5 text-[8px] font-bold uppercase tracking-wide text-slate-400/80 dark:text-slate-500">
-                        {q.label}
+                        {t(q.labelKey)}
                       </span>
                     )}
                     {cell.map((s) => (
@@ -106,11 +110,11 @@ function InfluenceMatrix({ stakeholders }: { stakeholders: Stakeholder[] }) {
           <div className="mt-1.5 grid grid-cols-3 gap-1.5 text-center">
             {(['Low', 'Medium', 'High'] as Level3[]).map((i) => (
               <span key={i} className="text-[10px] font-bold uppercase tracking-wide text-muted">
-                {i}
+                {t(TRI_KEYS[i])}
               </span>
             ))}
           </div>
-          <p className="mt-1 text-center text-[9px] font-bold uppercase tracking-wide text-muted">Interest</p>
+          <p className="mt-1 text-center text-[9px] font-bold uppercase tracking-wide text-muted">{t('inv.interest')}</p>
         </div>
       </div>
     </Card>
@@ -122,6 +126,7 @@ function InfluenceMatrix({ stakeholders }: { stakeholders: Stakeholder[] }) {
 export default function Investigation() {
   const { analysis, cs } = useOutletContext<AnalysisCtx>()
   const { updateAnalysis } = useApp()
+  const { t, lang } = useI18n()
   const toast = useToast()
 
   const [tab, setTab] = useState<Tab>('stakeholders')
@@ -149,23 +154,23 @@ export default function Investigation() {
 
   const saveStakeholder = () => {
     if (!form.name.trim() || !form.role.trim()) {
-      toast.warning('Please complete the required fields', 'Name and role are required.')
+      toast.warning(t('common.requiredFields'), t('form.nameRoleRequired'))
       return
     }
     if (editing) {
       updateAnalysis(analysis.caseId, (d) => {
         d.stakeholders = d.stakeholders.map((s) => (s.id === editing.id ? { ...s, ...form } : s))
       })
-      toast.success('Stakeholder updated', form.name)
+      toast.success(t('inv.updated'), form.name)
     } else {
       updateAnalysis(
         analysis.caseId,
         (d) => {
           d.stakeholders.push({ id: uid(), ...form, createdAt: nowISO() })
         },
-        { amount: XP.stakeholder, label: 'Stakeholder added' },
+        { amount: XP.stakeholder, label: t('xp.stakeholder') },
       )
-      toast.success('Stakeholder added', form.name)
+      toast.success(t('inv.added'), form.name)
     }
     setModalOpen(false)
   }
@@ -174,12 +179,12 @@ export default function Investigation() {
     updateAnalysis(analysis.caseId, (d) => {
       d.stakeholders = d.stakeholders.filter((s) => s.id !== id)
     })
-    toast.info('Stakeholder removed')
+    toast.info(t('inv.removed'))
   }
 
   const saveInterview = () => {
     if (!selectedStakeholder || !question.trim() || !answer.trim()) {
-      toast.warning('Please complete the required fields', 'Choose a stakeholder, a question, and write an answer.')
+      toast.warning(t('common.requiredFields'), t('itv.needAll'))
       return
     }
     updateAnalysis(
@@ -194,9 +199,9 @@ export default function Investigation() {
           createdAt: nowISO(),
         })
       },
-      { amount: XP.interview, label: 'Interview logged' },
+      { amount: XP.interview, label: t('xp.interview') },
     )
-    toast.success('Interview saved', `${selectedStakeholder}`)
+    toast.success(t('itv.saved'), `${selectedStakeholder}`)
     setQuestion('')
     setAnswer('')
     setIsCustom(false)
@@ -205,11 +210,11 @@ export default function Investigation() {
   return (
     <div className="space-y-5">
       <SectionHeader
-        title="Investigation"
-        subtitle="Understand who is affected and gather first-hand evidence before analyzing anything."
+        title={t('inv.title')}
+        subtitle={t('inv.subtitle')}
         action={
           <Segmented<Tab>
-            ariaLabel="Investigation sections"
+            ariaLabel={t('inv.sectionsAria')}
             value={tab}
             onChange={setTab}
             options={[
@@ -217,7 +222,7 @@ export default function Investigation() {
                 value: 'stakeholders',
                 label: (
                   <span className="inline-flex items-center gap-1.5">
-                    <Users className="h-3.5 w-3.5" /> Stakeholders ({analysis.stakeholders.length})
+                    <Users className="h-3.5 w-3.5" /> {t('inv.tabStakeholders', { count: analysis.stakeholders.length })}
                   </span>
                 ),
               },
@@ -225,7 +230,7 @@ export default function Investigation() {
                 value: 'interviews',
                 label: (
                   <span className="inline-flex items-center gap-1.5">
-                    <MessagesSquare className="h-3.5 w-3.5" /> Interviews ({analysis.interviews.length})
+                    <MessagesSquare className="h-3.5 w-3.5" /> {t('inv.tabInterviews', { count: analysis.interviews.length })}
                   </span>
                 ),
               },
@@ -240,21 +245,24 @@ export default function Investigation() {
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-muted">
                 {analysis.stakeholders.length === 0
-                  ? 'No stakeholders identified yet'
-                  : `${analysis.stakeholders.length} stakeholder${analysis.stakeholders.length > 1 ? 's' : ''} identified`}
+                  ? t('inv.noneIdentified')
+                  : t('inv.countIdentified', {
+                      count: analysis.stakeholders.length,
+                      s: analysis.stakeholders.length > 1 ? 's' : '',
+                    })}
               </p>
               <Button size="sm" icon={UserPlus} onClick={openAdd}>
-                Add Stakeholder
+                {t('inv.add')}
               </Button>
             </div>
             {analysis.stakeholders.length === 0 ? (
               <EmptyState
                 icon={Users}
-                title="No stakeholders yet."
-                description="Identify the people who affect or are affected by this system — decision makers, daily users, and external partners."
+                title={t('inv.emptyTitle')}
+                description={t('inv.emptyDesc')}
                 action={
                   <Button size="sm" icon={Plus} onClick={openAdd}>
-                    Identify First Stakeholder
+                    {t('inv.addFirst')}
                   </Button>
                 }
               />
@@ -283,13 +291,18 @@ export default function Investigation() {
                         </div>
                       </div>
                       <div className="flex shrink-0 gap-1">
-                        <button onClick={() => openEdit(s)} aria-label={`Edit ${s.name}`} title="Edit" className="icon-btn h-8 w-8">
+                        <button
+                          onClick={() => openEdit(s)}
+                          aria-label={`${t('common.edit')} ${s.name}`}
+                          title={t('common.edit')}
+                          className="icon-btn h-8 w-8"
+                        >
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={() => removeStakeholder(s.id)}
-                          aria-label={`Delete ${s.name}`}
-                          title="Delete"
+                          aria-label={`${t('common.delete')} ${s.name}`}
+                          title={t('common.delete')}
                           className="icon-btn h-8 w-8 hover:!bg-rose-500/10 hover:!text-rose-500"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -303,8 +316,12 @@ export default function Investigation() {
                       </p>
                     )}
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <Badge tone={LEVEL_TONE[s.influence]}>Influence: {s.influence}</Badge>
-                      <Badge tone={LEVEL_TONE[s.interest]}>Interest: {s.interest}</Badge>
+                      <Badge tone={LEVEL_TONE[s.influence]}>
+                        {t('inv.influence')}: {t(TRI_KEYS[s.influence])}
+                      </Badge>
+                      <Badge tone={LEVEL_TONE[s.interest]}>
+                        {t('inv.interest')}: {t(TRI_KEYS[s.interest])}
+                      </Badge>
                     </div>
                   </Card>
                 </motion.div>
@@ -315,9 +332,8 @@ export default function Investigation() {
             <InfluenceMatrix stakeholders={analysis.stakeholders} />
             <Card className="mt-4 p-4">
               <p className="text-xs leading-relaxed text-muted">
-                <span className="font-bold text-slate-700 dark:text-slate-200">Analyst tip —</span> people you may meet
-                in this case: {cs.stakeholdersContext.map((s) => s.name).join(', ')}. Add the ones your analysis
-                actually involves.
+                <span className="font-bold text-slate-700 dark:text-slate-200">{t('inv.tip')}</span>{' '}
+                {t('inv.tipBody', { names: cs.stakeholdersContext.map((s) => s.name).join(', ') })}
               </p>
             </Card>
           </div>
@@ -327,34 +343,34 @@ export default function Investigation() {
         <div className="grid gap-5 xl:grid-cols-5">
           <div className="xl:col-span-2">
             <Card className="p-5">
-              <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">Interview Simulation</h3>
-              <p className="mt-0.5 text-xs text-muted">Select a stakeholder, ask a question, record the answer.</p>
+              <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">{t('itv.title')}</h3>
+              <p className="mt-0.5 text-xs text-muted">{t('itv.subtitle')}</p>
 
               {analysis.stakeholders.length === 0 ? (
                 <div className="mt-4 rounded-xl border border-dashed border-slate-300/80 p-4 text-center text-xs text-muted dark:border-white/[0.09]">
-                  Add at least one stakeholder first — you need someone to interview.
+                  {t('itv.needStakeholder')}
                   <div className="mt-3">
                     <Button size="sm" variant="secondary" icon={UserPlus} onClick={() => setTab('stakeholders')}>
-                      Go to Stakeholders
+                      {t('itv.goToStakeholders')}
                     </Button>
                   </div>
                 </div>
               ) : (
                 <div className="mt-4 space-y-4">
-                  <Field label="Interviewee">
+                  <Field label={t('itv.interviewee')}>
                     <Select
-                      aria-label="Choose stakeholder"
+                      aria-label={t('itv.chooseAria')}
                       value={selectedStakeholder}
                       onChange={(e) => setSelectedStakeholder(e.target.value)}
                       options={[
-                        { value: '', label: 'Choose a stakeholder…' },
+                        { value: '', label: t('itv.choose') },
                         ...analysis.stakeholders.map((s) => ({ value: s.name, label: `${s.name} — ${s.role}` })),
                       ]}
                     />
                   </Field>
 
                   <div>
-                    <span className="label">Suggested questions</span>
+                    <span className="label">{t('itv.suggested')}</span>
                     <div className="flex flex-wrap gap-1.5">
                       {cs.interviewQuestions.map((q) => (
                         <button
@@ -380,33 +396,33 @@ export default function Investigation() {
                       }}
                       className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-indigo-500 hover:text-indigo-400 dark:text-indigo-300"
                     >
-                      <MessageSquarePlus className="h-3.5 w-3.5" /> Write a custom question
+                      <MessageSquarePlus className="h-3.5 w-3.5" /> {t('itv.custom')}
                     </button>
                   </div>
 
-                  <Field label="Question">
+                  <Field label={t('itv.question')}>
                     <Textarea
                       value={question}
                       onChange={(e) => {
                         setQuestion(e.target.value)
                         setIsCustom(true)
                       }}
-                      placeholder="What problems occur most frequently in the current process?"
-                      aria-label="Interview question"
+                      placeholder={t('itv.questionPh')}
+                      aria-label={t('itv.questionAria')}
                       className="min-h-[64px]"
                     />
                   </Field>
-                  <Field label="Answer">
+                  <Field label={t('itv.answer')}>
                     <Textarea
                       value={answer}
                       onChange={(e) => setAnswer(e.target.value)}
-                      placeholder="Write the stakeholder's answer as you understand it — this becomes evidence for your analysis."
-                      aria-label="Interview answer"
+                      placeholder={t('itv.answerPh')}
+                      aria-label={t('itv.answerAria')}
                       className="min-h-[110px]"
                     />
                   </Field>
                   <Button className="w-full" icon={Plus} onClick={saveInterview}>
-                    Save Interview Record
+                    {t('itv.save')}
                   </Button>
                 </div>
               )}
@@ -416,14 +432,14 @@ export default function Investigation() {
           <div className="space-y-3 xl:col-span-3">
             <p className="text-sm font-semibold text-muted">
               {analysis.interviews.length === 0
-                ? 'No interview records yet'
-                : `${analysis.interviews.length} interview record${analysis.interviews.length > 1 ? 's' : ''}`}
+                ? t('itv.none')
+                : t('itv.count', { count: analysis.interviews.length, s: analysis.interviews.length > 1 ? 's' : '' })}
             </p>
             {analysis.interviews.length === 0 ? (
               <EmptyState
                 icon={MessagesSquare}
-                title="No interviews yet."
-                description="Run interview simulations to collect evidence — strong analysis starts with listening."
+                title={t('itv.emptyTitle')}
+                description={t('itv.emptyDesc')}
               />
             ) : (
               [...analysis.interviews].reverse().map((iv) => (
@@ -436,19 +452,19 @@ export default function Investigation() {
                         </span>
                         <div>
                           <p className="text-sm font-semibold text-slate-900 dark:text-white">{iv.stakeholder}</p>
-                          <p className="text-[11px] text-muted">{formatDateTime(iv.createdAt)}</p>
+                          <p className="text-[11px] text-muted">{formatDateTime(iv.createdAt, lang)}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        {iv.custom && <Badge tone="violet">Custom</Badge>}
+                        {iv.custom && <Badge tone="violet">{t('itv.customBadge')}</Badge>}
                         <button
                           onClick={() =>
                             updateAnalysis(analysis.caseId, (d) => {
                               d.interviews = d.interviews.filter((x) => x.id !== iv.id)
                             })
                           }
-                          aria-label="Delete interview record"
-                          title="Delete"
+                          aria-label={t('common.delete')}
+                          title={t('common.delete')}
                           className="icon-btn h-8 w-8 hover:!bg-rose-500/10 hover:!text-rose-500"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -475,68 +491,68 @@ export default function Investigation() {
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editing ? 'Edit Stakeholder' : 'Add Stakeholder'}
-        subtitle="Who has a stake in this system?"
+        title={editing ? t('inv.editTitle') : t('inv.addTitle')}
+        subtitle={t('inv.addSub')}
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Name *">
+          <Field label={t('form.name')}>
             <Input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="e.g. Store Manager"
-              aria-label="Stakeholder name"
+              placeholder={t('form.namePh')}
+              aria-label={t('form.nameAria')}
             />
           </Field>
-          <Field label="Role *">
+          <Field label={t('form.role')}>
             <Input
               value={form.role}
               onChange={(e) => setForm({ ...form, role: e.target.value })}
-              placeholder="e.g. Decision Maker"
-              aria-label="Stakeholder role"
+              placeholder={t('form.rolePh')}
+              aria-label={t('form.roleAria')}
             />
           </Field>
-          <Field label="Department">
+          <Field label={t('form.department')}>
             <Input
               value={form.department}
               onChange={(e) => setForm({ ...form, department: e.target.value })}
-              placeholder="e.g. Operations"
-              aria-label="Department"
+              placeholder={t('form.departmentPh')}
+              aria-label={t('form.departmentAria')}
             />
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Influence">
+            <Field label={t('form.influence')}>
               <Select
                 value={form.influence}
                 onChange={(e) => setForm({ ...form, influence: e.target.value as Level3 })}
-                options={LEVELS}
-                aria-label="Influence level"
+                options={LEVELS.map((l) => ({ value: l, label: t(TRI_KEYS[l]) }))}
+                aria-label={t('form.influenceAria')}
               />
             </Field>
-            <Field label="Interest">
+            <Field label={t('form.interest')}>
               <Select
                 value={form.interest}
                 onChange={(e) => setForm({ ...form, interest: e.target.value as Level3 })}
-                options={LEVELS}
-                aria-label="Interest level"
+                options={LEVELS.map((l) => ({ value: l, label: t(TRI_KEYS[l]) }))}
+                aria-label={t('form.interestAria')}
               />
             </Field>
           </div>
-          <Field label="Main Concern" className="sm:col-span-2">
+          <Field label={t('form.concern')} className="sm:col-span-2">
             <Textarea
               value={form.concern}
               onChange={(e) => setForm({ ...form, concern: e.target.value })}
-              placeholder="What does this stakeholder care about most?"
-              aria-label="Main concern"
+              placeholder={t('form.concernPh')}
+              aria-label={t('form.concernAria')}
               className="min-h-[70px]"
             />
           </Field>
         </div>
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setModalOpen(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button onClick={saveStakeholder} icon={Check}>
-            {editing ? 'Save Changes' : 'Add Stakeholder'}
+            {editing ? t('form.saveChanges') : t('inv.addTitle')}
           </Button>
         </div>
       </Modal>

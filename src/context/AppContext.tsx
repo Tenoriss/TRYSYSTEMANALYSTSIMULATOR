@@ -2,9 +2,11 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from 'react'
 import type { AchievementDef } from '../lib/achievements'
 import { evaluateAchievements } from '../lib/achievements'
+import { achKeys, LEVEL_TITLE_KEYS, tr } from '../i18n'
+import type { Lang } from '../i18n'
 import { applyStreak, levelForXP, XP } from '../lib/scoring'
 import { clearAllKeys, loadPersistedData, persistData } from '../lib/storage'
-import type { AppData, CaseProgress, Evaluation, ExportFile, Settings, Theme } from '../types'
+import type { AppData, CaseProgress, Evaluation, ExportFile, Theme } from '../types'
 import { downloadJSON, nowISO, todayKey } from '../lib/utils'
 import { useToast } from './ToastContext'
 
@@ -12,7 +14,7 @@ const DEFAULT_DATA: AppData = {
   analyses: {},
   profile: { xp: 0, streak: 0, lastActivityDate: null, onboarded: false, createdAt: nowISO() },
   unlocked: {},
-  settings: { theme: 'dark' },
+  settings: { theme: 'dark', language: 'en' },
 }
 
 function emptyAnalysis(caseId: string): CaseProgress {
@@ -70,6 +72,7 @@ export interface AppContextValue {
   deleteAnalysis: (caseId: string) => void
   markReportGenerated: (caseId: string) => void
   setTheme: (theme: Theme) => void
+  setLanguage: (lang: Lang) => void
   completeOnboarding: () => void
   exportData: () => boolean
   importData: (jsonText: string) => boolean
@@ -95,6 +98,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       let next = updater(dataRef.current)
 
       // XP grant + streak + level up
+      const lang: Lang = next.settings.language === 'id' ? 'id' : 'en'
       if (opts?.xp) {
         const { amount, label } = opts.xp
         const before = next.profile
@@ -108,7 +112,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         toast.xp(amount, label)
         const levelAfter = levelForXP(newXP).info
         if (levelAfter.level > levelBefore) {
-          toast.push('achievement', 'Level up!', `You are now Level ${levelAfter.level} — ${levelAfter.title}`)
+          toast.push(
+            'achievement',
+            tr(lang, 'toast.levelUp'),
+            tr(lang, 'toast.levelUpDesc', {
+              level: levelAfter.level,
+              title: tr(lang, LEVEL_TITLE_KEYS[levelAfter.level - 1]),
+            }),
+          )
         }
       }
 
@@ -122,12 +133,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             unlocked: { ...next.unlocked, [a.id]: nowISO() },
             profile: { ...next.profile, xp: next.profile.xp + a.xp },
           }
-          toast.achievement(a.title, a.xp)
+          toast.achievement(tr(lang, achKeys(a.id).title), a.xp)
         }
       }
 
       const ok = persistData(next)
-      if (!ok) toast.error('Unable to save local data.', 'Please check your browser storage settings.')
+      if (!ok) toast.error(tr(lang, 'toast.storageError'), tr(lang, 'toast.storageErrorDesc'))
       setLastSavedAt(Date.now())
       setData(next)
     },
@@ -160,7 +171,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const fresh = emptyAnalysis(caseId)
       commit(
         (d) => ({ ...d, analyses: { ...d.analyses, [caseId]: fresh } }),
-        { xp: { amount: XP.startCase, label: 'Investigation started' } },
+        { xp: { amount: XP.startCase, label: tr(dataRef.current.settings.language, 'xp.startCase') } },
       )
       return fresh
     },
@@ -203,9 +214,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             [caseId]: { ...current, status: 'completed', completedAt: nowISO(), updatedAt: nowISO() },
           },
         }),
-        { xp: { amount: XP.completeCase, label: 'Analysis completed' } },
+        { xp: { amount: XP.completeCase, label: tr(dataRef.current.settings.language, 'xp.completeCase') } },
       )
-      toast.success('Case completed', 'Your analysis report is ready to share.')
+      toast.success(
+        tr(dataRef.current.settings.language, 'toast.caseCompleted'),
+        tr(dataRef.current.settings.language, 'toast.caseCompletedDesc'),
+      )
     },
     [commit, toast],
   )
@@ -224,12 +238,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const deleteAnalysis = useCallback(
     (caseId: string) => {
+      const lang = dataRef.current.settings.language
       commit((d) => {
         const analyses = { ...d.analyses }
         delete analyses[caseId]
         return { ...d, analyses }
       })
-      toast.info('Analysis deleted', 'The case data was removed from local storage.')
+      toast.info(tr(lang, 'toast.analysisDeleted'), tr(lang, 'toast.analysisDeletedDesc'))
     },
     [commit, toast],
   )
@@ -246,7 +261,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             [caseId]: { ...current, reportGeneratedAt: nowISO(), updatedAt: nowISO() },
           },
         }),
-        { xp: { amount: XP.report, label: 'Report generated' } },
+        { xp: { amount: XP.report, label: tr(dataRef.current.settings.language, 'xp.report') } },
       )
     },
     [commit],
@@ -255,6 +270,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setTheme = useCallback(
     (theme: Theme) => {
       commit((d) => ({ ...d, settings: { ...d.settings, theme } }))
+    },
+    [commit],
+  )
+
+  const setLanguage = useCallback(
+    (lang: Lang) => {
+      commit((d) => ({ ...d, settings: { ...d.settings, language: lang } }))
     },
     [commit],
   )
@@ -292,22 +314,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
           typeof d.analyses === 'object' &&
           typeof d.settings === 'object'
         if (!valid || !d) return false
-        const incomingTheme = (d.settings as Settings | undefined)?.theme
+        const incomingSettings = d.settings as Partial<AppData['settings']> | undefined
         const incoming: AppData = {
           profile: { ...DEFAULT_DATA.profile, ...d.profile },
           analyses: d.analyses ?? {},
           unlocked: d.unlocked ?? {},
           settings: {
-            theme: incomingTheme === 'light' || incomingTheme === 'system' ? incomingTheme : 'dark',
+            theme:
+              incomingSettings?.theme === 'light' || incomingSettings?.theme === 'system'
+                ? incomingSettings.theme
+                : 'dark',
+            language: incomingSettings?.language === 'id' ? 'id' : 'en',
           },
         }
+        const lang = incoming.settings.language
         const ok = persistData(incoming)
         if (!ok) {
-          toast.error('Unable to save local data.', 'Please check your browser storage settings.')
+          toast.error(tr(lang, 'toast.storageError'), tr(lang, 'toast.storageErrorDesc'))
           return false
         }
         setData(incoming)
-        toast.success('Data imported', 'Your analysis data was restored successfully.')
+        toast.success(tr(lang, 'toast.imported'), tr(lang, 'toast.importedDesc'))
         return true
       } catch {
         return false
@@ -317,10 +344,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   )
 
   const clearAll = useCallback(() => {
+    const lang = dataRef.current.settings.language
     clearAllKeys()
     const fresh: AppData = { ...DEFAULT_DATA, profile: { ...DEFAULT_DATA.profile, onboarded: true } }
     setData(fresh)
-    toast.info('All data cleared', 'Local analysis data was permanently removed.')
+    toast.info(tr(lang, 'toast.cleared'), tr(lang, 'toast.clearedDesc'))
   }, [toast])
 
   const value = useMemo<AppContextValue>(
@@ -336,6 +364,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       deleteAnalysis,
       markReportGenerated,
       setTheme,
+      setLanguage,
       completeOnboarding,
       exportData,
       importData,
@@ -353,6 +382,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       deleteAnalysis,
       markReportGenerated,
       setTheme,
+      setLanguage,
       completeOnboarding,
       exportData,
       importData,

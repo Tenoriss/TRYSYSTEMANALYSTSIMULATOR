@@ -17,6 +17,8 @@ import { Badge, Button, Card } from '../components/ui'
 import { useApp } from '../context/AppContext'
 import { getCase } from '../data/cases'
 import { computeOverallProgress } from '../lib/scoring'
+import { DIFF_KEYS, INDUSTRY_KEYS } from '../i18n'
+import { useCaseText, useI18n } from '../i18n/useI18n'
 import { DIFFICULTY_TONE } from './Dashboard'
 
 const fadeUp = { initial: { opacity: 0, y: 14 }, animate: { opacity: 1, y: 0 } }
@@ -51,16 +53,18 @@ export default function CaseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { data, startCase } = useApp()
-  const cs = id ? getCase(id) : undefined
+  const { t } = useI18n()
+  const raw = id ? getCase(id) : undefined
+  const cs = useCaseText(raw)
 
-  if (!cs) {
+  if (!cs || !raw) {
     return (
       <div className="py-16 text-center">
-        <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">Case not found</h1>
-        <p className="mt-2 text-sm text-muted">This scenario does not exist in the library.</p>
+        <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">{t('cd.notFound')}</h1>
+        <p className="mt-2 text-sm text-muted">{t('cd.notFoundDesc')}</p>
         <Link to="/cases">
           <Button className="mt-5" icon={ArrowLeft}>
-            Back to Case Library
+            {t('cd.backToLibrary')}
           </Button>
         </Link>
       </div>
@@ -82,7 +86,7 @@ export default function CaseDetail() {
           onClick={() => navigate('/cases')}
           className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted transition hover:text-indigo-500"
         >
-          <ArrowLeft className="h-4 w-4" /> Case Library
+          <ArrowLeft className="h-4 w-4" /> {t('cd.back')}
         </button>
         <Card className="relative overflow-hidden p-6 sm:p-8">
           <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" aria-hidden />
@@ -92,12 +96,14 @@ export default function CaseDetail() {
             </span>
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge tone="indigo">{cs.industry}</Badge>
-                <Badge tone={DIFFICULTY_TONE[cs.difficulty]}>{cs.difficulty}</Badge>
+                <Badge tone="indigo">{t(INDUSTRY_KEYS[cs.industry])}</Badge>
+                <Badge tone={DIFFICULTY_TONE[cs.difficulty]}>{t(DIFF_KEYS[cs.difficulty])}</Badge>
                 <Badge tone="slate">{cs.estimatedTime}</Badge>
                 {analysis && (
                   <Badge tone={analysis.status === 'completed' ? 'emerald' : 'cyan'}>
-                    {analysis.status === 'completed' ? 'Completed' : `${computeOverallProgress(analysis)}% complete`}
+                    {analysis.status === 'completed'
+                      ? t('status.completed')
+                      : t('cd.percentComplete', { pct: computeOverallProgress(analysis) })}
                   </Badge>
                 )}
               </div>
@@ -116,7 +122,7 @@ export default function CaseDetail() {
             </div>
             <div className="shrink-0 sm:pl-4">
               <Button size="lg" icon={PlayCircle} onClick={begin}>
-                {analysis ? 'Continue Investigation' : 'Start Investigation'}
+                {analysis ? t('cd.continue') : t('cd.start')}
               </Button>
             </div>
           </div>
@@ -125,20 +131,20 @@ export default function CaseDetail() {
 
       {/* Briefing grid */}
       <div className="grid gap-4 md:grid-cols-2">
-        <InfoCard icon={Building2} title="Organization Overview" delay={0.05}>
+        <InfoCard icon={Building2} title={t('cd.organization')} delay={0.05}>
           {cs.organization}
         </InfoCard>
-        <InfoCard icon={Crosshair} title="Current Situation" delay={0.08}>
+        <InfoCard icon={Crosshair} title={t('cd.currentSituation')} delay={0.08}>
           {cs.currentSituation}
         </InfoCard>
-        <InfoCard icon={GitBranch} title="Existing Process" delay={0.11}>
+        <InfoCard icon={GitBranch} title={t('cd.existingProcess')} delay={0.11}>
           <ol className="list-decimal space-y-1.5 pl-4">
             {cs.existingProcess.map((p, i) => (
               <li key={i}>{p}</li>
             ))}
           </ol>
         </InfoCard>
-        <InfoCard icon={AlertTriangle} title="Known Problems" delay={0.14}>
+        <InfoCard icon={AlertTriangle} title={t('cd.knownProblems')} delay={0.14}>
           <ul className="space-y-1.5">
             {cs.knownProblems.map((p, i) => (
               <li key={i} className="flex gap-2">
@@ -148,7 +154,7 @@ export default function CaseDetail() {
             ))}
           </ul>
         </InfoCard>
-        <InfoCard icon={Target} title="Business Objectives" delay={0.17}>
+        <InfoCard icon={Target} title={t('cd.objectives')} delay={0.17}>
           <ul className="space-y-1.5">
             {cs.objectives.map((p, i) => (
               <li key={i} className="flex gap-2">
@@ -158,7 +164,7 @@ export default function CaseDetail() {
             ))}
           </ul>
         </InfoCard>
-        <InfoCard icon={ShieldAlert} title="Constraints" delay={0.2}>
+        <InfoCard icon={ShieldAlert} title={t('cd.constraints')} delay={0.2}>
           <ul className="space-y-1.5">
             {cs.constraints.map((p, i) => (
               <li key={i} className="flex gap-2">
@@ -168,7 +174,7 @@ export default function CaseDetail() {
             ))}
           </ul>
         </InfoCard>
-        <InfoCard icon={Users} title="Stakeholders You May Meet" delay={0.23}>
+        <InfoCard icon={Users} title={t('cd.stakeholders')} delay={0.23}>
           <ul className="space-y-2.5">
             {cs.stakeholdersContext.map((s, i) => (
               <li key={i}>
@@ -188,18 +194,12 @@ export default function CaseDetail() {
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/15 text-indigo-500 dark:text-indigo-300">
                 <ListChecks className="h-4 w-4" />
               </span>
-              <h2 className="font-display text-sm font-bold text-slate-900 dark:text-white">Your Mission</h2>
+              <h2 className="font-display text-sm font-bold text-slate-900 dark:text-white">{t('cd.mission')}</h2>
             </div>
-            <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-              Analyze the current system, identify the main problems, define system requirements, and propose an
-              improved solution.
-            </p>
-            <p className="mt-3 text-sm leading-relaxed text-muted">
-              Work through the analysis pipeline — investigation, problem analysis, requirements, modeling, solution
-              design, and evaluation — then generate your professional report.
-            </p>
+            <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{t('cd.missionBody')}</p>
+            <p className="mt-3 text-sm leading-relaxed text-muted">{t('cd.missionBody2')}</p>
             <Button className="mt-5" icon={ArrowRight} onClick={begin}>
-              {analysis ? 'Continue Investigation' : 'Start Investigation'}
+              {analysis ? t('cd.continue') : t('cd.start')}
             </Button>
           </Card>
         </motion.div>

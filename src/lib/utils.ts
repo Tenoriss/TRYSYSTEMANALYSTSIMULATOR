@@ -32,30 +32,38 @@ export function greeting(date = new Date()): string {
   return 'Good evening'
 }
 
-export function formatDate(iso: string): string {
+export function formatDate(iso: string, lang: 'en' | 'id' = 'en'): string {
   const d = new Date(iso)
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+  return d.toLocaleDateString(lang === 'id' ? 'id-ID' : undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export function formatDateTime(iso: string): string {
+export function formatDateTime(iso: string, lang: 'en' | 'id' = 'en'): string {
   const d = new Date(iso)
-  return `${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} · ${d.toLocaleTimeString(
-    undefined,
-    { hour: '2-digit', minute: '2-digit' },
-  )}`
+  const locale = lang === 'id' ? 'id-ID' : undefined
+  return `${d.toLocaleDateString(locale, { month: 'short', day: 'numeric' })} · ${d.toLocaleTimeString(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+  })}`
 }
 
-export function relativeTime(iso: string): string {
+export function relativeTime(iso: string, lang: 'en' | 'id' = 'en'): string {
   const then = new Date(iso).getTime()
   const diff = Date.now() - then
   const mins = Math.floor(diff / 60000)
+  const hours = Math.floor(mins / 60)
+  const days = Math.floor(hours / 24)
+  if (lang === 'id') {
+    if (mins < 1) return 'baru saja'
+    if (mins < 60) return `${mins} mnt lalu`
+    if (hours < 24) return `${hours} jam lalu`
+    if (days < 30) return `${days} hari lalu`
+    return formatDate(iso, lang)
+  }
   if (mins < 1) return 'just now'
   if (mins < 60) return `${mins}m ago`
-  const hours = Math.floor(mins / 60)
   if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
   if (days < 30) return `${days}d ago`
-  return formatDate(iso)
+  return formatDate(iso, lang)
 }
 
 export function clamp(n: number, min: number, max: number): number {

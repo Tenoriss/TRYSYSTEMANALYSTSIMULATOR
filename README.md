@@ -6,6 +6,7 @@ An interactive, fully client-side simulator for practicing the craft of a **Syst
 
 ## Features
 
+- **Bilingual UI (English & Indonesian)** — full English ↔ Bahasa Indonesia localization covering the interface, evaluator feedback, achievements, and the built-in case material. Switch from the top bar toggle or Settings → Language; English stays the default.
 - **Case Library** — 6 built-in scenarios across Retail, Education, Healthcare, Restaurant, Logistics, and Finance, each with its own organization, processes, stakeholders, problems, objectives, and constraints.
 - **Guided analysis workflow** — a 7-step stepper (Investigation → Problems → Requirements → Modeling → Solution → Evaluation → Report) with autosave and per-phase progress.
 - **Investigation tools** — stakeholder register with Interest × Influence matrix, and an interview simulation with case-specific questions and custom Q&A.

@@ -1,3 +1,5 @@
+import type { TranslationKey } from '../i18n'
+import { tr } from '../i18n'
 import type {
   CaseProgress,
   Evaluation,
@@ -151,20 +153,23 @@ export function computeOverallProgress(a: CaseProgress): number {
 
 export interface EvaluationGate {
   ok: boolean
-  checks: { label: string; done: boolean }[]
+  checks: { key: TranslationKey; done: boolean }[]
 }
 
 export function evaluationGate(a: CaseProgress): EvaluationGate {
-  const checks = [
-    { label: 'Identify at least 1 stakeholder', done: a.stakeholders.length >= 1 },
-    { label: 'Document at least 1 problem', done: a.problems.length >= 1 },
-    { label: 'Write at least 1 functional requirement', done: a.functionalRequirements.length >= 1 },
-    { label: 'Name your proposed solution', done: a.solution.name.trim().length > 0 },
+  const checks: { key: TranslationKey; done: boolean }[] = [
+    { key: 'ev.gate1', done: a.stakeholders.length >= 1 },
+    { key: 'ev.gate2', done: a.problems.length >= 1 },
+    { key: 'ev.gate3', done: a.functionalRequirements.length >= 1 },
+    { key: 'ev.gate4', done: a.solution.name.trim().length > 0 },
   ]
   return { ok: checks.every((c) => c.done), checks }
 }
 
-export function computeEvaluation(a: CaseProgress): Evaluation {
+export function computeEvaluation(
+  a: CaseProgress,
+  fb: (key: TranslationKey) => string = (k) => tr('en', k),
+): Evaluation {
   /* Investigation (20): stakeholders 10 + interviews 10 */
   const sh = a.stakeholders.length
   const iv = a.interviews.length
@@ -236,42 +241,39 @@ export function computeEvaluation(a: CaseProgress): Evaluation {
   const strengths: string[] = []
   const improvements: string[] = []
 
-  if (sh >= 3) strengths.push('You identified multiple stakeholders across different roles.')
-  else improvements.push('Add more stakeholders to cover different perspectives (aim for 3+).')
+  if (sh >= 3) strengths.push(fb('fb.shStakeholders'))
+  else improvements.push(fb('fb.impStakeholders'))
 
-  if (iv >= 2) strengths.push('You validated assumptions through stakeholder interviews.')
-  else improvements.push('Conduct a few stakeholder interviews to ground your analysis in evidence.')
+  if (iv >= 2) strengths.push(fb('fb.shInterviews'))
+  else improvements.push(fb('fb.impInterviews'))
 
-  if (fr >= 5) strengths.push('Your functional requirements are comprehensive and well organized.')
-  else if (fr < 3) improvements.push('Expand your functional requirements — describe more of what the system must do.')
+  if (fr >= 5) strengths.push(fb('fb.shFR'))
+  else if (fr < 3) improvements.push(fb('fb.impFR'))
 
-  if (nfr >= 3) strengths.push('Good coverage of non-functional requirements.')
-  else improvements.push('Add more non-functional requirements (performance, security, usability, reliability).')
+  if (nfr >= 3) strengths.push(fb('fb.shNFR'))
+  else improvements.push(fb('fb.impNFR'))
 
-  if (pb > 0 && withRC / pb >= 0.8) strengths.push('Strong root cause analysis on the identified problems.')
-  else if (pb > withRC) improvements.push('Dig deeper into root causes — every problem should trace back to why it happens.')
+  if (pb > 0 && withRC / pb >= 0.8) strengths.push(fb('fb.shRC'))
+  else if (pb > withRC) improvements.push(fb('fb.impRC'))
 
-  if (pb > 0 && withEvidence / pb < 0.5)
-    improvements.push('Provide stronger evidence and impact statements for the identified problems.')
+  if (pb > 0 && withEvidence / pb < 0.5) improvements.push(fb('fb.impEvidence'))
 
-  if (uc >= 2 && a.useCases.some((u) => u.mainFlow.trim()))
-    strengths.push('You modeled system behavior with detailed use cases.')
-  else improvements.push('Add use cases with their main flow to describe how actors interact with the system.')
+  if (uc >= 2 && a.useCases.some((u) => u.mainFlow.trim())) strengths.push(fb('fb.shUC'))
+  else improvements.push(fb('fb.impUC'))
 
-  if (steps >= 5 && hasStartEnd) strengths.push('Your process flow clearly maps start to finish.')
-  else improvements.push('Map the process flow from a clear start to a clear end step.')
+  if (steps >= 5 && hasStartEnd) strengths.push(fb('fb.shFlow'))
+  else improvements.push(fb('fb.impFlow'))
 
-  if (!a.asIsToBe.currentProcess.trim())
-    improvements.push('Improve the AS-IS process description before finalizing your design.')
+  if (!a.asIsToBe.currentProcess.trim()) improvements.push(fb('fb.impAsIs'))
 
-  if (a.features.length >= 3) strengths.push('Your proposed solution includes a rich feature set.')
-  else improvements.push('Add more proposed features to strengthen your solution design.')
+  if (a.features.length >= 3) strengths.push(fb('fb.shFeatures'))
+  else improvements.push(fb('fb.impFeatures'))
 
-  if (rk > 0 && withMitigation === rk) strengths.push('You included mitigation strategies for every identified risk.')
-  else if (rk === 0) improvements.push('Identify potential risks of your proposed solution and how to mitigate them.')
+  if (rk > 0 && withMitigation === rk) strengths.push(fb('fb.shRisks'))
+  else if (rk === 0) improvements.push(fb('fb.impRisks'))
 
-  if (strengths.length === 0) strengths.push('You completed the minimum analysis scope — a solid first pass.')
-  if (improvements.length === 0) improvements.push('Excellent work — refine wording and validate requirements with stakeholders.')
+  if (strengths.length === 0) strengths.push(fb('fb.shFallback'))
+  if (improvements.length === 0) improvements.push(fb('fb.impFallback'))
 
   return { total, breakdown, strengths: strengths.slice(0, 5), improvements: improvements.slice(0, 6), computedAt: nowISO() }
 }

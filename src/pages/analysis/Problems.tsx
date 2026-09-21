@@ -30,6 +30,8 @@ import { useToast } from '../../context/ToastContext'
 import type { AnalysisCtx } from '../AnalysisLayout'
 import { problemPriority, XP } from '../../lib/scoring'
 import { nowISO, uid } from '../../lib/utils'
+import { FREQ_KEYS, PRIORITY_LABEL_KEYS, SEV_KEYS } from '../../i18n'
+import { useI18n } from '../../i18n/useI18n'
 import type { Frequency, Problem, RootCause, Severity } from '../../types'
 
 const SEVERITIES: Severity[] = ['Low', 'Medium', 'High', 'Critical']
@@ -62,6 +64,7 @@ type Tab = 'problems' | 'whys'
 export default function Problems() {
   const { analysis } = useOutletContext<AnalysisCtx>()
   const { updateAnalysis } = useApp()
+  const { t } = useI18n()
   const toast = useToast()
 
   const [tab, setTab] = useState<Tab>('problems')
@@ -103,30 +106,30 @@ export default function Problems() {
 
   const saveProblem = () => {
     if (!form.title.trim()) {
-      toast.warning('Please complete the required fields', 'A problem title is required.')
+      toast.warning(t('common.requiredFields'), t('pr.titleRequired'))
       return
     }
     if (editing) {
       updateAnalysis(analysis.caseId, (d) => {
         d.problems = d.problems.map((p) => (p.id === editing.id ? { ...p, ...form } : p))
       })
-      toast.success('Problem updated', form.title)
+      toast.success(t('pr.updated'), form.title)
     } else {
       updateAnalysis(
         analysis.caseId,
         (d) => {
           d.problems.push({ id: uid(), ...form, createdAt: nowISO() })
         },
-        { amount: XP.problem, label: 'Problem documented' },
+        { amount: XP.problem, label: t('xp.problem') },
       )
-      toast.success('Problem documented', form.title)
+      toast.success(t('pr.added'), form.title)
     }
     setModalOpen(false)
   }
 
   const saveWhys = (rc: RootCause) => {
     if (!rc.problem.trim() || rc.whys.every((w) => !w.trim())) {
-      toast.warning('Please complete the required fields', 'State the problem and at least one why.')
+      toast.warning(t('common.requiredFields'), t('wh.needProblem'))
       return
     }
     const isNew = !analysis.rootCauses.some((r) => r.id === rc.id)
@@ -136,20 +139,20 @@ export default function Problems() {
         if (isNew) d.rootCauses.push(rc)
         else d.rootCauses = d.rootCauses.map((r) => (r.id === rc.id ? rc : r))
       },
-      isNew ? { amount: XP.rootCause, label: '5 Whys analysis saved' } : undefined,
+      isNew ? { amount: XP.rootCause, label: t('xp.rootCause') } : undefined,
     )
-    toast.success(isNew ? '5 Whys analysis saved' : '5 Whys analysis updated', rc.problem)
+    toast.success(isNew ? t('wh.saved') : t('wh.updated'), rc.problem)
     setEditingWhys(null)
   }
 
   return (
     <div className="space-y-5">
       <SectionHeader
-        title="Problem Analysis"
-        subtitle="Turn symptoms into documented, prioritized problems — then dig to their root causes."
+        title={t('pr.title')}
+        subtitle={t('pr.subtitle')}
         action={
           <Segmented<Tab>
-            ariaLabel="Problem analysis sections"
+            ariaLabel={t('pr.sectionsAria')}
             value={tab}
             onChange={setTab}
             options={[
@@ -157,7 +160,7 @@ export default function Problems() {
                 value: 'problems',
                 label: (
                   <span className="inline-flex items-center gap-1.5">
-                    <AlertCircle className="h-3.5 w-3.5" /> Problems ({analysis.problems.length})
+                    <AlertCircle className="h-3.5 w-3.5" /> {t('pr.tabProblems', { count: analysis.problems.length })}
                   </span>
                 ),
               },
@@ -165,7 +168,7 @@ export default function Problems() {
                 value: 'whys',
                 label: (
                   <span className="inline-flex items-center gap-1.5">
-                    <Search className="h-3.5 w-3.5" /> 5 Whys ({analysis.rootCauses.length})
+                    <Search className="h-3.5 w-3.5" /> {t('pr.tabWhys', { count: analysis.rootCauses.length })}
                   </span>
                 ),
               },
@@ -179,9 +182,9 @@ export default function Problems() {
           {analysis.problems.length > 0 && (
             <Card className="p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted">Severity distribution</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-muted">{t('pr.distribution')}</p>
                 <p className="text-xs text-muted">
-                  {analysis.problems.length} problem{analysis.problems.length > 1 ? 's' : ''}
+                  {t('pr.count', { count: analysis.problems.length, s: analysis.problems.length > 1 ? 's' : '' })}
                 </p>
               </div>
               <div className="mt-2.5 flex h-3 gap-0.5 overflow-hidden rounded-full">
@@ -201,7 +204,7 @@ export default function Problems() {
                               ? 'bg-amber-400'
                               : 'bg-slate-300 dark:bg-slate-600'
                       }`}
-                      title={`${s}: ${sevCount[s]}`}
+                      title={`${t(SEV_KEYS[s])}: ${sevCount[s]}`}
                     />
                   ) : null,
                 )}
@@ -220,7 +223,7 @@ export default function Problems() {
                               : 'bg-slate-300 dark:bg-slate-600'
                       }`}
                     />
-                    {s} ({sevCount[s]})
+                    {t(SEV_KEYS[s])} ({sevCount[s]})
                   </span>
                 ))}
               </div>
@@ -228,20 +231,20 @@ export default function Problems() {
           )}
 
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-muted">Sorted by priority score (severity × frequency)</p>
+            <p className="text-sm font-semibold text-muted">{t('pr.sortedBy')}</p>
             <Button size="sm" icon={Plus} onClick={openAdd}>
-              Add Problem
+              {t('pr.add')}
             </Button>
           </div>
 
           {sorted.length === 0 ? (
             <EmptyState
               icon={FileWarning}
-              title="No problems documented yet."
-              description="Start listing what is broken in the current system — each problem needs a root cause, impact, and evidence."
+              title={t('pr.emptyTitle')}
+              description={t('pr.emptyDesc')}
               action={
                 <Button size="sm" icon={Plus} onClick={openAdd}>
-                  Document First Problem
+                  {t('pr.addFirst')}
                 </Button>
               }
             />
@@ -270,14 +273,16 @@ export default function Problems() {
                           <div>
                             <h3 className="font-semibold leading-snug text-slate-900 dark:text-white">{p.title}</h3>
                             <div className="mt-1.5 flex flex-wrap gap-1.5">
-                              <Badge tone={SEV_TONE[p.severity]}>{p.severity}</Badge>
-                              <Badge tone="slate">{p.frequency}</Badge>
-                              <Badge tone={PRIORITY_TONE[pr.label]}>Priority: {pr.label}</Badge>
+                              <Badge tone={SEV_TONE[p.severity]}>{t(SEV_KEYS[p.severity])}</Badge>
+                              <Badge tone="slate">{t(FREQ_KEYS[p.frequency])}</Badge>
+                              <Badge tone={PRIORITY_TONE[pr.label]}>
+                                {t('pr.priority', { label: t(PRIORITY_LABEL_KEYS[pr.label]) })}
+                              </Badge>
                             </div>
                           </div>
                         </div>
                         <div className="flex shrink-0 gap-1">
-                          <button onClick={() => openEdit(p)} aria-label={`Edit problem ${p.title}`} title="Edit" className="icon-btn h-8 w-8">
+                          <button onClick={() => openEdit(p)} aria-label={`${t('common.edit')} ${p.title}`} title={t('common.edit')} className="icon-btn h-8 w-8">
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
                           <button
@@ -285,10 +290,10 @@ export default function Problems() {
                               updateAnalysis(analysis.caseId, (d) => {
                                 d.problems = d.problems.filter((x) => x.id !== p.id)
                               })
-                              toast.info('Problem removed')
+                              toast.info(t('pr.removed'))
                             }}
-                            aria-label={`Delete problem ${p.title}`}
-                            title="Delete"
+                            aria-label={`${t('common.delete')} ${p.title}`}
+                            title={t('common.delete')}
                             className="icon-btn h-8 w-8 hover:!bg-rose-500/10 hover:!text-rose-500"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -299,7 +304,7 @@ export default function Problems() {
                       <div className="mt-3 grid flex-1 gap-2 text-xs sm:grid-cols-2">
                         {p.rootCause ? (
                           <div className="rounded-lg bg-slate-50 p-2.5 dark:bg-white/[0.03]">
-                            <p className="font-bold uppercase tracking-wide text-[10px] text-indigo-500 dark:text-indigo-300">Root cause</p>
+                            <p className="font-bold uppercase tracking-wide text-[10px] text-indigo-500 dark:text-indigo-300">{t('pr.rootCause')}</p>
                             <p className="mt-1 leading-relaxed text-slate-600 dark:text-slate-300">{p.rootCause}</p>
                           </div>
                         ) : (
@@ -307,18 +312,18 @@ export default function Problems() {
                             onClick={() => openEdit(p)}
                             className="rounded-lg border border-dashed border-slate-300/80 p-2.5 text-left text-muted transition hover:border-indigo-300 hover:text-indigo-500 dark:border-white/10"
                           >
-                            + Add root cause…
+                            {t('pr.addRootCause')}
                           </button>
                         )}
                         {p.impact && (
                           <div className="rounded-lg bg-slate-50 p-2.5 dark:bg-white/[0.03]">
-                            <p className="font-bold uppercase tracking-wide text-[10px] text-orange-500">Business impact</p>
+                            <p className="font-bold uppercase tracking-wide text-[10px] text-orange-500">{t('pr.impact')}</p>
                             <p className="mt-1 leading-relaxed text-slate-600 dark:text-slate-300">{p.impact}</p>
                           </div>
                         )}
                         {p.evidence && (
                           <div className="rounded-lg bg-slate-50 p-2.5 dark:bg-white/[0.03] sm:col-span-2">
-                            <p className="font-bold uppercase tracking-wide text-[10px] text-emerald-500">Evidence</p>
+                            <p className="font-bold uppercase tracking-wide text-[10px] text-emerald-500">{t('pr.evidence')}</p>
                             <p className="mt-1 leading-relaxed text-slate-600 dark:text-slate-300">{p.evidence}</p>
                           </div>
                         )}
@@ -340,52 +345,62 @@ export default function Problems() {
             updateAnalysis(analysis.caseId, (d) => {
               d.rootCauses = d.rootCauses.filter((r) => r.id !== id)
             })
-            toast.info('5 Whys analysis removed')
+            toast.info(t('wh.removed'))
           }}
         />
       )}
 
       {/* Problem modal */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Problem' : 'Document a Problem'} subtitle="Be specific — vague problems lead to vague solutions." wide>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? t('pr.editTitle') : t('pr.addTitle')} subtitle={t('pr.addSub')} wide>
         <div className="grid gap-4">
-          <Field label="Problem title *">
+          <Field label={t('pr.problemTitle')}>
             <Input
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="e.g. Stock records do not match physical inventory"
-              aria-label="Problem title"
+              placeholder={t('pr.problemTitlePh')}
+              aria-label={t('pr.problemTitleAria')}
             />
           </Field>
-          <Field label="Description">
+          <Field label={t('pr.description')}>
             <Textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="What exactly happens, where, and who is involved?"
+              placeholder={t('pr.descriptionPh')}
             />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Severity">
-              <Select value={form.severity} onChange={(e) => setForm({ ...form, severity: e.target.value as Severity })} options={SEVERITIES} aria-label="Severity" />
+            <Field label={t('pr.severity')}>
+              <Select
+                value={form.severity}
+                onChange={(e) => setForm({ ...form, severity: e.target.value as Severity })}
+                options={SEVERITIES.map((s) => ({ value: s, label: t(SEV_KEYS[s]) }))}
+                aria-label={t('pr.severity')}
+              />
             </Field>
-            <Field label="Frequency">
-              <Select value={form.frequency} onChange={(e) => setForm({ ...form, frequency: e.target.value as Frequency })} options={FREQUENCIES} aria-label="Frequency" />
+            <Field label={t('pr.frequency')}>
+              <Select
+                value={form.frequency}
+                onChange={(e) => setForm({ ...form, frequency: e.target.value as Frequency })}
+                options={FREQUENCIES.map((f) => ({ value: f, label: t(FREQ_KEYS[f]) }))}
+                aria-label={t('pr.frequency')}
+              />
             </Field>
           </div>
-          <Field label="Root cause">
-            <Textarea value={form.rootCause} onChange={(e) => setForm({ ...form, rootCause: e.target.value })} placeholder="Why does this problem exist? (use the 5 Whys tab for a deeper dive)" className="min-h-[64px]" />
+          <Field label={t('pr.rootCause')}>
+            <Textarea value={form.rootCause} onChange={(e) => setForm({ ...form, rootCause: e.target.value })} placeholder={t('pr.rootCausePh')} className="min-h-[64px]" />
           </Field>
-          <Field label="Business impact">
-            <Textarea value={form.impact} onChange={(e) => setForm({ ...form, impact: e.target.value })} placeholder="What does this problem cost the organization — time, money, trust?" className="min-h-[64px]" />
+          <Field label={t('pr.impact')}>
+            <Textarea value={form.impact} onChange={(e) => setForm({ ...form, impact: e.target.value })} placeholder={t('pr.impactPh')} className="min-h-[64px]" />
           </Field>
-          <Field label="Evidence">
-            <Textarea value={form.evidence} onChange={(e) => setForm({ ...form, evidence: e.target.value })} placeholder="Data, observations, or interview quotes that prove this problem exists" className="min-h-[64px]" />
+          <Field label={t('pr.evidence')}>
+            <Textarea value={form.evidence} onChange={(e) => setForm({ ...form, evidence: e.target.value })} placeholder={t('pr.evidencePh')} className="min-h-[64px]" />
           </Field>
         </div>
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setModalOpen(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
-          <Button onClick={saveProblem}>{editing ? 'Save Changes' : 'Add Problem'}</Button>
+          <Button onClick={saveProblem}>{editing ? t('form.saveChanges') : t('pr.add')}</Button>
         </div>
       </Modal>
     </div>
@@ -407,6 +422,7 @@ function FiveWhys({
   onSave: (r: RootCause) => void
   onDelete: (id: string) => void
 }) {
+  const { t } = useI18n()
   const startNew = () =>
     setEditing({ id: uid(), problem: analysis.problems[0]?.title ?? '', whys: ['', '', '', '', ''], conclusion: '', createdAt: nowISO() })
 
@@ -415,23 +431,23 @@ function FiveWhys({
       <div className="xl:col-span-2">
         <Card className="p-5">
           <div className="flex items-center justify-between">
-            <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">5 Whys Root Cause Analysis</h3>
+            <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">{t('wh.title')}</h3>
             {!editing && (
               <Button size="sm" variant="secondary" icon={Plus} onClick={startNew}>
-                New
+                {t('wh.new')}
               </Button>
             )}
           </div>
-          <p className="mt-0.5 text-xs text-muted">Ask “why” until you reach something fixable.</p>
+          <p className="mt-0.5 text-xs text-muted">{t('wh.desc')}</p>
 
           {editing ? (
             <div className="mt-4 space-y-3">
-              <Field label="Problem statement *">
+              <Field label={t('wh.problemStatement')}>
                 <Input
                   value={editing.problem}
                   onChange={(e) => setEditing({ ...editing, problem: e.target.value })}
                   list="whys-problems"
-                  aria-label="Problem statement"
+                  aria-label={t('wh.problemStatement')}
                 />
                 <datalist id="whys-problems">
                   {analysis.problems.map((p) => (
@@ -442,7 +458,7 @@ function FiveWhys({
               {editing.whys.map((w, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <div className="flex-1">
-                    <span className="label">Why #{i + 1}</span>
+                    <span className="label">{t('wh.whyN', { n: i + 1 })}</span>
                     <div className="flex items-center gap-2">
                       <ArrowDown className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
                       <Input
@@ -452,27 +468,27 @@ function FiveWhys({
                           whys[i] = e.target.value
                           setEditing({ ...editing, whys })
                         }}
-                        placeholder={i === 0 ? 'Why does this happen?' : 'And why is that?'}
-                        aria-label={`Why number ${i + 1}`}
+                        placeholder={i === 0 ? t('wh.why1Ph') : t('wh.whyNextPh')}
+                        aria-label={t('wh.whyNAria', { n: i + 1 })}
                       />
                     </div>
                   </div>
                 </div>
               ))}
-              <Field label="Conclusion / root cause">
+              <Field label={t('wh.conclusion')}>
                 <Textarea
                   value={editing.conclusion}
                   onChange={(e) => setEditing({ ...editing, conclusion: e.target.value })}
-                  placeholder="The underlying cause your solution should address…"
+                  placeholder={t('wh.conclusionPh')}
                   className="min-h-[64px]"
                 />
               </Field>
               <div className="flex gap-2">
                 <Button className="flex-1" onClick={() => onSave(editing)}>
-                  Save Analysis
+                  {t('wh.save')}
                 </Button>
                 <Button variant="secondary" onClick={() => setEditing(null)}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
               </div>
             </div>
@@ -481,11 +497,11 @@ function FiveWhys({
               <EmptyState
                 className="py-8"
                 icon={Search}
-                title="No analysis in progress."
-                description="Start a new 5 Whys session to trace a problem to its root."
+                title={t('wh.emptyTitle')}
+                description={t('wh.emptyDesc')}
                 action={
                   <Button size="sm" icon={Plus} onClick={startNew}>
-                    Start 5 Whys
+                    {t('wh.start')}
                   </Button>
                 }
               />
@@ -496,7 +512,9 @@ function FiveWhys({
 
       <div className="space-y-3 xl:col-span-3">
         <p className="text-sm font-semibold text-muted">
-          {analysis.rootCauses.length === 0 ? 'No completed analyses' : `${analysis.rootCauses.length} root cause session${analysis.rootCauses.length > 1 ? 's' : ''}`}
+          {analysis.rootCauses.length === 0
+            ? t('wh.none')
+            : t('wh.count', { count: analysis.rootCauses.length, s: analysis.rootCauses.length > 1 ? 's' : '' })}
         </p>
         {analysis.rootCauses.map((rc) => (
           <motion.div key={rc.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
@@ -504,10 +522,10 @@ function FiveWhys({
               <div className="flex items-start justify-between gap-3">
                 <h3 className="font-semibold text-slate-900 dark:text-white">{rc.problem}</h3>
                 <div className="flex shrink-0 gap-1">
-                  <button onClick={() => setEditing(rc)} aria-label="Edit 5 Whys" title="Edit" className="icon-btn h-8 w-8">
+                  <button onClick={() => setEditing(rc)} aria-label={t('common.edit')} title={t('common.edit')} className="icon-btn h-8 w-8">
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
-                  <button onClick={() => onDelete(rc.id)} aria-label="Delete 5 Whys" title="Delete" className="icon-btn h-8 w-8 hover:!bg-rose-500/10 hover:!text-rose-500">
+                  <button onClick={() => onDelete(rc.id)} aria-label={t('common.delete')} title={t('common.delete')} className="icon-btn h-8 w-8 hover:!bg-rose-500/10 hover:!text-rose-500">
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -529,7 +547,7 @@ function FiveWhys({
               </div>
               {rc.conclusion.trim() && (
                 <div className="mt-1 rounded-lg bg-emerald-500/[0.07] px-3 py-2 text-xs leading-relaxed text-emerald-700 dark:bg-emerald-400/[0.08] dark:text-emerald-200">
-                  <span className="font-bold">Root cause:</span> {rc.conclusion}
+                  <span className="font-bold">{t('wh.rootCauseLabel')}</span> {rc.conclusion}
                 </div>
               )}
             </Card>

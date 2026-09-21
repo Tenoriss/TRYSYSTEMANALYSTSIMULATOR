@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AlertTriangle, X } from 'lucide-react'
+import { useI18n } from '../i18n/useI18n'
 import { Button } from './ui'
 
 export function Modal({
@@ -20,6 +21,7 @@ export function Modal({
   children: ReactNode
   wide?: boolean
 }) {
+  const { t } = useI18n()
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
@@ -63,7 +65,7 @@ export function Modal({
                 <h2 className="font-display text-base font-semibold text-slate-900 dark:text-white">{title}</h2>
                 {subtitle && <p className="mt-0.5 text-xs text-muted">{subtitle}</p>}
               </div>
-              <button onClick={onClose} aria-label="Close dialog" className="icon-btn -mr-1.5 -mt-1">
+              <button onClick={onClose} aria-label={t('common.closeDialog')} title={t('common.closeDialog')} className="icon-btn -mr-1.5 -mt-1">
                 <X className="h-4.5 w-4.5" />
               </button>
             </div>
@@ -82,7 +84,7 @@ export function ConfirmDialog({
   onConfirm,
   title,
   message,
-  confirmLabel = 'Delete',
+  confirmLabel,
   danger = true,
 }: {
   open: boolean
@@ -93,6 +95,7 @@ export function ConfirmDialog({
   confirmLabel?: string
   danger?: boolean
 }) {
+  const { t } = useI18n()
   return (
     <Modal open={open} onClose={onClose} title={title}>
       <div className="flex items-start gap-3">
@@ -103,7 +106,7 @@ export function ConfirmDialog({
       </div>
       <div className="mt-6 flex justify-end gap-2">
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           variant={danger ? 'danger' : 'primary'}
@@ -112,7 +115,7 @@ export function ConfirmDialog({
             onClose()
           }}
         >
-          {confirmLabel}
+          {confirmLabel ?? t('common.delete')}
         </Button>
       </div>
     </Modal>

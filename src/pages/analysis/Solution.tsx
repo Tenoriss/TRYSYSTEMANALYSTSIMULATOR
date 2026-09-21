@@ -31,6 +31,9 @@ import { useToast } from '../../context/ToastContext'
 import type { AnalysisCtx } from '../AnalysisLayout'
 import { riskScore, XP } from '../../lib/scoring'
 import { nowISO, uid } from '../../lib/utils'
+import { TRI_KEYS } from '../../i18n'
+import type { TranslationKey } from '../../i18n'
+import { useI18n } from '../../i18n/useI18n'
 import type { Level3, Risk, SolutionFeature } from '../../types'
 
 type Tab = 'design' | 'risks'
@@ -60,6 +63,7 @@ const EMPTY_RISK: RiskForm = { risk: '', probability: 'Medium', impact: 'Medium'
 /* ------------------------------- Risk matrix ------------------------------- */
 
 function RiskMatrix({ risks }: { risks: Risk[] }) {
+  const { t } = useI18n()
   const cells = useMemo(() => {
     const m: Record<string, Risk[]> = {}
     risks.forEach((r) => {
@@ -84,15 +88,15 @@ function RiskMatrix({ risks }: { risks: Risk[] }) {
 
   return (
     <Card className="p-5">
-      <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">Probability × Impact Matrix</h3>
+      <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">{t('rk.matrixTitle')}</h3>
       <div className="mt-4 flex gap-2">
         <div className="flex w-24 shrink-0 flex-col justify-between py-1 text-right">
           {probs.map((p) => (
             <span key={p} className="flex h-16 items-center justify-end text-[10px] font-bold uppercase tracking-wide text-muted">
-              {p}
+              {t(TRI_KEYS[p])}
             </span>
           ))}
-          <span className="text-[9px] font-bold uppercase tracking-wide text-muted">Probability</span>
+          <span className="text-[9px] font-bold uppercase tracking-wide text-muted">{t('rk.probabilityAxis')}</span>
         </div>
         <div className="flex-1">
           <div className="grid grid-cols-3 gap-1.5">
@@ -118,11 +122,11 @@ function RiskMatrix({ risks }: { risks: Risk[] }) {
           <div className="mt-1.5 grid grid-cols-3 gap-1.5 text-center">
             {imps.map((i) => (
               <span key={i} className="text-[10px] font-bold uppercase tracking-wide text-muted">
-                {i}
+                {t(TRI_KEYS[i])}
               </span>
             ))}
           </div>
-          <p className="mt-1 text-center text-[9px] font-bold uppercase tracking-wide text-muted">Impact</p>
+          <p className="mt-1 text-center text-[9px] font-bold uppercase tracking-wide text-muted">{t('rk.impactAxis')}</p>
         </div>
       </div>
     </Card>
@@ -134,6 +138,7 @@ function RiskMatrix({ risks }: { risks: Risk[] }) {
 export default function Solution() {
   const { analysis } = useOutletContext<AnalysisCtx>()
   const { updateAnalysis } = useApp()
+  const { t } = useI18n()
   const toast = useToast()
   const [tab, setTab] = useState<Tab>('design')
 
@@ -150,26 +155,26 @@ export default function Solution() {
     updateAnalysis(analysis.caseId, (d) => {
       d.solution = { ...d.solution, [field]: value }
     })
-    toast.success('Analysis saved')
+    toast.success(t('common.analysisSaved'))
   }
 
   const saveFeature = () => {
     if (!featureForm.name.trim()) {
-      toast.warning('Please complete the required fields', 'Feature name is required.')
+      toast.warning(t('common.requiredFields'), t('feat.nameRequired'))
       return
     }
     if (editingFeature) {
       updateAnalysis(analysis.caseId, (d) => {
         d.features = d.features.map((f) => (f.id === editingFeature.id ? { ...f, ...featureForm } : f))
       })
-      toast.success('Feature updated', featureForm.name)
+      toast.success(t('feat.updated'), featureForm.name)
     } else {
       updateAnalysis(
         analysis.caseId,
         (d) => {
           d.features.push({ id: uid(), ...featureForm })
         },
-        { amount: XP.feature, label: 'Feature proposed' },
+        { amount: XP.feature, label: t('xp.feature') },
       )
     }
     setFeatureModal(false)
@@ -177,43 +182,43 @@ export default function Solution() {
 
   const saveRisk = () => {
     if (!riskForm.risk.trim()) {
-      toast.warning('Please complete the required fields', 'Describe the risk first.')
+      toast.warning(t('common.requiredFields'), t('rk.describeRequired'))
       return
     }
     if (editingRisk) {
       updateAnalysis(analysis.caseId, (d) => {
         d.risks = d.risks.map((r) => (r.id === editingRisk.id ? { ...r, ...riskForm } : r))
       })
-      toast.success('Risk updated')
+      toast.success(t('rk.updated'))
     } else {
       updateAnalysis(
         analysis.caseId,
         (d) => {
           d.risks.push({ id: uid(), ...riskForm, createdAt: nowISO() })
         },
-        { amount: XP.risk, label: 'Risk identified' },
+        { amount: XP.risk, label: t('xp.risk') },
       )
     }
     setRiskModal(false)
   }
 
-  const SOLUTION_FIELDS: [keyof AnalysisCtx['analysis']['solution'], string, string][] = [
-    ['description', 'System description', 'What is the system, in 2–3 sentences? Who uses it and why?'],
-    ['targetUsers', 'Target users', 'Who are the primary and secondary users?'],
-    ['technology', 'Technology suggestion', 'Recommended platform, devices, integrations — and why they fit the constraints.'],
-    ['expectedBenefits', 'Expected benefits', 'Quantify where possible: hours saved, errors reduced, revenue protected.'],
-    ['risks', 'Risks', 'What could make this solution fail?'],
-    ['limitations', 'Limitations', 'What will this solution deliberately NOT do?'],
+  const SOLUTION_FIELDS: [keyof AnalysisCtx['analysis']['solution'], TranslationKey, TranslationKey][] = [
+    ['description', 'so.description', 'so.descriptionPh'],
+    ['targetUsers', 'so.targetUsers', 'so.targetUsersPh'],
+    ['technology', 'so.technology', 'so.technologyPh'],
+    ['expectedBenefits', 'so.expectedBenefits', 'so.expectedBenefitsPh'],
+    ['risks', 'so.risks', 'so.risksPh'],
+    ['limitations', 'so.limitations', 'so.limitationsPh'],
   ]
 
   return (
     <div className="space-y-5">
       <SectionHeader
-        title="Solution Design"
-        subtitle="Turn your analysis into a coherent, realistic system proposal — with eyes open to its risks."
+        title={t('so.title')}
+        subtitle={t('so.subtitle')}
         action={
           <Segmented<Tab>
-            ariaLabel="Solution sections"
+            ariaLabel={t('so.sectionsAria')}
             value={tab}
             onChange={setTab}
             options={[
@@ -221,7 +226,7 @@ export default function Solution() {
                 value: 'design',
                 label: (
                   <span className="inline-flex items-center gap-1.5">
-                    <Lightbulb className="h-3.5 w-3.5" /> Solution ({analysis.features.length} features)
+                    <Lightbulb className="h-3.5 w-3.5" /> {t('so.tabDesign', { count: analysis.features.length })}
                   </span>
                 ),
               },
@@ -229,7 +234,7 @@ export default function Solution() {
                 value: 'risks',
                 label: (
                   <span className="inline-flex items-center gap-1.5">
-                    <Shield className="h-3.5 w-3.5" /> Risk Analysis ({analysis.risks.length})
+                    <Shield className="h-3.5 w-3.5" /> {t('so.tabRisks', { count: analysis.risks.length })}
                   </span>
                 ),
               },
@@ -248,25 +253,25 @@ export default function Solution() {
                   <Layers className="h-4.5 w-4.5" />
                 </span>
                 <div>
-                  <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">Proposed Solution</h3>
-                  <p className="text-xs text-muted">Saved automatically when you leave a field.</p>
+                  <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">{t('so.proposed')}</h3>
+                  <p className="text-xs text-muted">{t('so.autosave')}</p>
                 </div>
               </div>
               <div className="mt-5 space-y-4">
-                <Field label="Solution name *">
+                <Field label={t('so.solutionName')}>
                   <Input
                     defaultValue={analysis.solution.name}
-                    placeholder="e.g. SinarStock — Real-Time Inventory Tracker"
-                    aria-label="Solution name"
+                    placeholder={t('so.solutionNamePh')}
+                    aria-label={t('so.solutionName')}
                     onBlur={(e) => saveSolutionField('name', e.target.value)}
                   />
                 </Field>
-                {SOLUTION_FIELDS.map(([key, label, ph]) => (
-                  <Field key={key} label={label}>
+                {SOLUTION_FIELDS.map(([key, labelKey, phKey]) => (
+                  <Field key={key} label={t(labelKey)}>
                     <Textarea
                       defaultValue={analysis.solution[key]}
-                      placeholder={ph}
-                      aria-label={label}
+                      placeholder={t(phKey)}
+                      aria-label={t(labelKey)}
                       onBlur={(e) => saveSolutionField(key, e.target.value)}
                     />
                   </Field>
@@ -278,7 +283,7 @@ export default function Solution() {
           {/* Features */}
           <div className="space-y-3 xl:col-span-2">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-muted">Proposed features</p>
+              <p className="text-sm font-semibold text-muted">{t('so.proposedFeatures')}</p>
               <Button
                 size="sm"
                 icon={Plus}
@@ -288,14 +293,14 @@ export default function Solution() {
                   setFeatureModal(true)
                 }}
               >
-                Add Feature
+                {t('so.addFeature')}
               </Button>
             </div>
             {analysis.features.length === 0 ? (
               <EmptyState
                 icon={Gift}
-                title="No features proposed yet."
-                description="Break your solution into concrete, prioritized features mapped to user roles."
+                title={t('so.featEmptyTitle')}
+                description={t('so.featEmptyDesc')}
                 action={
                   <Button
                     size="sm"
@@ -306,7 +311,7 @@ export default function Solution() {
                       setFeatureModal(true)
                     }}
                   >
-                    Propose First Feature
+                    {t('so.addFirstFeature')}
                   </Button>
                 }
               />
@@ -329,15 +334,15 @@ export default function Solution() {
                         </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-1">
-                        <Badge tone={f.priority === 'High' ? 'rose' : f.priority === 'Medium' ? 'amber' : 'slate'}>{f.priority}</Badge>
+                        <Badge tone={f.priority === 'High' ? 'rose' : f.priority === 'Medium' ? 'amber' : 'slate'}>{t(TRI_KEYS[f.priority])}</Badge>
                         <button
                           onClick={() => {
                             setEditingFeature(f)
                             setFeatureForm({ name: f.name, description: f.description, priority: f.priority, userRole: f.userRole })
                             setFeatureModal(true)
                           }}
-                          aria-label={`Edit feature ${f.name}`}
-                          title="Edit"
+                          aria-label={`${t('common.edit')} ${f.name}`}
+                          title={t('common.edit')}
                           className="icon-btn h-7 w-7"
                         >
                           <Pencil className="h-3 w-3" />
@@ -347,10 +352,10 @@ export default function Solution() {
                             updateAnalysis(analysis.caseId, (d) => {
                               d.features = d.features.filter((x) => x.id !== f.id)
                             })
-                            toast.info('Feature removed')
+                            toast.info(t('feat.removed'))
                           }}
-                          aria-label={`Delete feature ${f.name}`}
-                          title="Delete"
+                          aria-label={`${t('common.delete')} ${f.name}`}
+                          title={t('common.delete')}
                           className="icon-btn h-7 w-7 hover:!bg-rose-500/10 hover:!text-rose-500"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -369,7 +374,7 @@ export default function Solution() {
         <div className="grid gap-5 xl:grid-cols-5">
           <div className="space-y-3 xl:col-span-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-muted">Risk register — level = probability × impact</p>
+              <p className="text-sm font-semibold text-muted">{t('rk.register')}</p>
               <Button
                 size="sm"
                 icon={Plus}
@@ -379,14 +384,14 @@ export default function Solution() {
                   setRiskModal(true)
                 }}
               >
-                Add Risk
+                {t('rk.add')}
               </Button>
             </div>
             {analysis.risks.length === 0 ? (
               <EmptyState
                 icon={Shield}
-                title="No risks identified yet."
-                description="Every proposal has risks. Identify them now — and how you will mitigate each one."
+                title={t('rk.emptyTitle')}
+                description={t('rk.emptyDesc')}
                 action={
                   <Button
                     size="sm"
@@ -397,7 +402,7 @@ export default function Solution() {
                       setRiskModal(true)
                     }}
                   >
-                    Identify First Risk
+                    {t('rk.addFirst')}
                   </Button>
                 }
               />
@@ -425,10 +430,10 @@ export default function Solution() {
                             <div>
                               <p className="text-sm font-semibold text-slate-900 dark:text-white">{r.risk}</p>
                               <div className="mt-1.5 flex flex-wrap gap-1.5">
-                                <Badge tone="slate">P: {r.probability}</Badge>
-                                <Badge tone="slate">I: {r.impact}</Badge>
-                                <Badge tone={RISK_TONE[rs.label]}>Level: {rs.label}</Badge>
-                                {r.owner && <Badge tone="indigo">Owner: {r.owner}</Badge>}
+                                <Badge tone="slate">{t('rk.probability', { p: t(TRI_KEYS[r.probability]) })}</Badge>
+                                <Badge tone="slate">{t('rk.impact', { i: t(TRI_KEYS[r.impact]) })}</Badge>
+                                <Badge tone={RISK_TONE[rs.label]}>{t('rk.level', { level: t(TRI_KEYS[rs.label]) })}</Badge>
+                                {r.owner && <Badge tone="indigo">{t('rk.owner', { owner: r.owner })}</Badge>}
                               </div>
                             </div>
                           </div>
@@ -445,8 +450,8 @@ export default function Solution() {
                                 })
                                 setRiskModal(true)
                               }}
-                              aria-label="Edit risk"
-                              title="Edit"
+                              aria-label={t('common.edit')}
+                              title={t('common.edit')}
                               className="icon-btn h-8 w-8"
                             >
                               <Pencil className="h-3.5 w-3.5" />
@@ -456,10 +461,10 @@ export default function Solution() {
                                 updateAnalysis(analysis.caseId, (d) => {
                                   d.risks = d.risks.filter((x) => x.id !== r.id)
                                 })
-                                toast.info('Risk removed')
+                                toast.info(t('rk.removed'))
                               }}
-                              aria-label="Delete risk"
-                              title="Delete"
+                              aria-label={t('common.delete')}
+                              title={t('common.delete')}
                               className="icon-btn h-8 w-8 hover:!bg-rose-500/10 hover:!text-rose-500"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -468,7 +473,7 @@ export default function Solution() {
                         </div>
                         {r.mitigation && (
                           <p className="mt-2.5 rounded-lg bg-emerald-500/[0.06] px-3 py-2 text-xs leading-relaxed text-emerald-700 dark:bg-emerald-400/[0.08] dark:text-emerald-200">
-                            <span className="font-bold">Mitigation:</span> {r.mitigation}
+                            <span className="font-bold">{t('rk.mitigation')}</span> {r.mitigation}
                           </p>
                         )}
                       </Card>
@@ -480,67 +485,79 @@ export default function Solution() {
           <div className="xl:col-span-2">
             <RiskMatrix risks={analysis.risks} />
             <Card className="mt-4 p-4">
-              <p className="text-xs leading-relaxed text-muted">
-                <span className="font-bold text-slate-700 dark:text-slate-200">Scoring —</span> Risk Score =
-                Probability × Impact (Low=1, Medium=2, High=3). Scores 1–2 are Low, 3–4 Medium, 6–9 High.
-              </p>
+              <p className="text-xs leading-relaxed text-muted">{t('rk.scoringNote')}</p>
             </Card>
           </div>
         </div>
       )}
 
       {/* Feature modal */}
-      <Modal open={featureModal} onClose={() => setFeatureModal(false)} title={editingFeature ? 'Edit Feature' : 'Propose a Feature'}>
+      <Modal open={featureModal} onClose={() => setFeatureModal(false)} title={editingFeature ? t('feat.editTitle') : t('feat.addTitle')}>
         <div className="grid gap-4">
-          <Field label="Feature name *">
-            <Input value={featureForm.name} onChange={(e) => setFeatureForm({ ...featureForm, name: e.target.value })} placeholder="e.g. Barcode stock counting" aria-label="Feature name" />
+          <Field label={t('feat.name')}>
+            <Input value={featureForm.name} onChange={(e) => setFeatureForm({ ...featureForm, name: e.target.value })} placeholder={t('feat.namePh')} aria-label={t('feat.name')} />
           </Field>
-          <Field label="Description">
-            <Textarea value={featureForm.description} onChange={(e) => setFeatureForm({ ...featureForm, description: e.target.value })} placeholder="What does it do and what problem does it solve?" />
+          <Field label={t('feat.description')}>
+            <Textarea value={featureForm.description} onChange={(e) => setFeatureForm({ ...featureForm, description: e.target.value })} placeholder={t('feat.descriptionPh')} />
           </Field>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Priority">
-              <Select value={featureForm.priority} onChange={(e) => setFeatureForm({ ...featureForm, priority: e.target.value as Level3 })} options={LEVELS3} aria-label="Priority" />
+            <Field label={t('feat.priority')}>
+              <Select
+                value={featureForm.priority}
+                onChange={(e) => setFeatureForm({ ...featureForm, priority: e.target.value as Level3 })}
+                options={LEVELS3.map((l) => ({ value: l, label: t(TRI_KEYS[l]) }))}
+                aria-label={t('feat.priority')}
+              />
             </Field>
-            <Field label="User role">
-              <Input value={featureForm.userRole} onChange={(e) => setFeatureForm({ ...featureForm, userRole: e.target.value })} placeholder="e.g. Store Manager" aria-label="User role" />
+            <Field label={t('feat.userRole')}>
+              <Input value={featureForm.userRole} onChange={(e) => setFeatureForm({ ...featureForm, userRole: e.target.value })} placeholder={t('feat.userRolePh')} aria-label={t('feat.userRole')} />
             </Field>
           </div>
         </div>
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setFeatureModal(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
-          <Button onClick={saveFeature}>{editingFeature ? 'Save Changes' : 'Add Feature'}</Button>
+          <Button onClick={saveFeature}>{editingFeature ? t('form.saveChanges') : t('so.addFeature')}</Button>
         </div>
       </Modal>
 
       {/* Risk modal */}
-      <Modal open={riskModal} onClose={() => setRiskModal(false)} title={editingRisk ? 'Edit Risk' : 'Identify a Risk'} subtitle="Think: adoption, data, technology, cost, people.">
+      <Modal open={riskModal} onClose={() => setRiskModal(false)} title={editingRisk ? t('rk.editTitle') : t('rk.addTitle')} subtitle={t('rk.addSub')}>
         <div className="grid gap-4">
-          <Field label="Risk *">
-            <Input value={riskForm.risk} onChange={(e) => setRiskForm({ ...riskForm, risk: e.target.value })} placeholder="e.g. Staff resist scanning workflow change" aria-label="Risk" />
+          <Field label={t('rk.riskField')}>
+            <Input value={riskForm.risk} onChange={(e) => setRiskForm({ ...riskForm, risk: e.target.value })} placeholder={t('rk.riskPh')} aria-label={t('rk.riskField')} />
           </Field>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Probability">
-              <Select value={riskForm.probability} onChange={(e) => setRiskForm({ ...riskForm, probability: e.target.value as Level3 })} options={LEVELS3} aria-label="Probability" />
+            <Field label={t('rk.probabilityField')}>
+              <Select
+                value={riskForm.probability}
+                onChange={(e) => setRiskForm({ ...riskForm, probability: e.target.value as Level3 })}
+                options={LEVELS3.map((l) => ({ value: l, label: t(TRI_KEYS[l]) }))}
+                aria-label={t('rk.probabilityField')}
+              />
             </Field>
-            <Field label="Impact">
-              <Select value={riskForm.impact} onChange={(e) => setRiskForm({ ...riskForm, impact: e.target.value as Level3 })} options={LEVELS3} aria-label="Impact" />
+            <Field label={t('rk.impactField')}>
+              <Select
+                value={riskForm.impact}
+                onChange={(e) => setRiskForm({ ...riskForm, impact: e.target.value as Level3 })}
+                options={LEVELS3.map((l) => ({ value: l, label: t(TRI_KEYS[l]) }))}
+                aria-label={t('rk.impactField')}
+              />
             </Field>
           </div>
-          <Field label="Mitigation">
-            <Textarea value={riskForm.mitigation} onChange={(e) => setRiskForm({ ...riskForm, mitigation: e.target.value })} placeholder="How will you prevent or reduce this risk?" />
+          <Field label={t('rk.mitigationField')}>
+            <Textarea value={riskForm.mitigation} onChange={(e) => setRiskForm({ ...riskForm, mitigation: e.target.value })} placeholder={t('rk.mitigationPh')} />
           </Field>
-          <Field label="Owner">
-            <Input value={riskForm.owner} onChange={(e) => setRiskForm({ ...riskForm, owner: e.target.value })} placeholder="e.g. Project Lead" aria-label="Risk owner" />
+          <Field label={t('rk.ownerField')}>
+            <Input value={riskForm.owner} onChange={(e) => setRiskForm({ ...riskForm, owner: e.target.value })} placeholder={t('rk.ownerPh')} aria-label={t('rk.ownerField')} />
           </Field>
         </div>
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setRiskModal(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
-          <Button onClick={saveRisk}>{editingRisk ? 'Save Changes' : 'Add Risk'}</Button>
+          <Button onClick={saveRisk}>{editingRisk ? t('form.saveChanges') : t('rk.add')}</Button>
         </div>
       </Modal>
     </div>

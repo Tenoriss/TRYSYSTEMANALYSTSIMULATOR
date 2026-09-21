@@ -27,6 +27,8 @@ import { useToast } from '../../context/ToastContext'
 import type { AnalysisCtx } from '../AnalysisLayout'
 import { XP } from '../../lib/scoring'
 import { nowISO, uid } from '../../lib/utils'
+import { MOSCOW_KEYS, NFRCAT_KEYS, REQSTATUS_KEYS } from '../../i18n'
+import { useI18n } from '../../i18n/useI18n'
 import type {
   FunctionalRequirement,
   MoSCoW,
@@ -81,6 +83,7 @@ const EMPTY_NFR: NFRForm = { requirement: '', category: 'Performance', priority:
 export default function Requirements() {
   const { analysis } = useOutletContext<AnalysisCtx>()
   const { updateAnalysis } = useApp()
+  const { t } = useI18n()
   const toast = useToast()
 
   const [tab, setTab] = useState<Tab>('functional')
@@ -119,7 +122,7 @@ export default function Requirements() {
 
   const saveFR = () => {
     if (!frForm.requirement.trim()) {
-      toast.warning('Please complete the required fields', 'Requirement statement is required.')
+      toast.warning(t('common.requiredFields'), t('rq.statementRequired'))
       return
     }
     if (editingFR) {
@@ -128,7 +131,7 @@ export default function Requirements() {
           r.id === editingFR.id ? { ...r, ...frForm } : r,
         )
       })
-      toast.success('Requirement updated', editingFR.code)
+      toast.success(t('rq.updated'), editingFR.code)
     } else {
       const code = nextCode('FR', analysis.functionalRequirements.map((r) => r.code))
       updateAnalysis(
@@ -136,16 +139,16 @@ export default function Requirements() {
         (d) => {
           d.functionalRequirements.push({ id: uid(), code, ...frForm, createdAt: nowISO() })
         },
-        { amount: XP.requirement, label: `${code} added` },
+        { amount: XP.requirement, label: t('xp.requirement', { code }) },
       )
-      toast.success('Functional requirement added', code)
+      toast.success(t('rq.addedFR'), code)
     }
     setFRModal(false)
   }
 
   const saveNFR = () => {
     if (!nfrForm.requirement.trim()) {
-      toast.warning('Please complete the required fields', 'Requirement statement is required.')
+      toast.warning(t('common.requiredFields'), t('rq.statementRequired'))
       return
     }
     if (editingNFR) {
@@ -154,7 +157,7 @@ export default function Requirements() {
           r.id === editingNFR.id ? { ...r, ...nfrForm } : r,
         )
       })
-      toast.success('Requirement updated', editingNFR.code)
+      toast.success(t('rq.updated'), editingNFR.code)
     } else {
       const code = nextCode('NFR', analysis.nonFunctionalRequirements.map((r) => r.code))
       updateAnalysis(
@@ -162,9 +165,9 @@ export default function Requirements() {
         (d) => {
           d.nonFunctionalRequirements.push({ id: uid(), code, ...nfrForm, createdAt: nowISO() })
         },
-        { amount: XP.requirement, label: `${code} added` },
+        { amount: XP.requirement, label: t('xp.requirement', { code }) },
       )
-      toast.success('Non-functional requirement added', code)
+      toast.success(t('rq.addedNFR'), code)
     }
     setNFRModal(false)
   }
@@ -172,11 +175,11 @@ export default function Requirements() {
   return (
     <div className="space-y-5">
       <SectionHeader
-        title="Requirements"
-        subtitle="Translate problems into clear, prioritized statements of what the system must do — and how well."
+        title={t('rq.title')}
+        subtitle={t('rq.subtitle')}
         action={
           <Segmented<Tab>
-            ariaLabel="Requirement types"
+            ariaLabel={t('rq.typesAria')}
             value={tab}
             onChange={setTab}
             options={[
@@ -184,7 +187,7 @@ export default function Requirements() {
                 value: 'functional',
                 label: (
                   <span className="inline-flex items-center gap-1.5">
-                    <ClipboardList className="h-3.5 w-3.5" /> Functional ({analysis.functionalRequirements.length})
+                    <ClipboardList className="h-3.5 w-3.5" /> {t('rq.tabFR', { count: analysis.functionalRequirements.length })}
                   </span>
                 ),
               },
@@ -192,7 +195,7 @@ export default function Requirements() {
                 value: 'nonfunctional',
                 label: (
                   <span className="inline-flex items-center gap-1.5">
-                    <ShieldCheck className="h-3.5 w-3.5" /> Non-Functional ({analysis.nonFunctionalRequirements.length})
+                    <ShieldCheck className="h-3.5 w-3.5" /> {t('rq.tabNFR', { count: analysis.nonFunctionalRequirements.length })}
                   </span>
                 ),
               },
@@ -208,8 +211,8 @@ export default function Requirements() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search requirements…"
-            aria-label="Search requirements"
+            placeholder={t('rq.searchPh')}
+            aria-label={t('rq.searchAria')}
             className="pl-9"
           />
         </div>
@@ -217,25 +220,25 @@ export default function Requirements() {
           <Select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            aria-label="Filter by priority"
+            aria-label={t('rq.filterPriorityAria')}
             className="w-auto py-1.5 text-xs font-semibold"
-            options={[{ value: 'all', label: 'All priorities' }, ...PRIORITIES.map((p) => ({ value: p, label: p }))]}
+            options={[{ value: 'all', label: t('rq.allPriorities') }, ...PRIORITIES.map((p) => ({ value: p, label: t(MOSCOW_KEYS[p]) }))]}
           />
           {tab === 'functional' ? (
             <Select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              aria-label="Filter by status"
+              aria-label={t('rq.filterStatusAria')}
               className="w-auto py-1.5 text-xs font-semibold"
-              options={[{ value: 'all', label: 'All statuses' }, ...STATUSES.map((s) => ({ value: s, label: s }))]}
+              options={[{ value: 'all', label: t('rq.allStatuses') }, ...STATUSES.map((s) => ({ value: s, label: t(REQSTATUS_KEYS[s]) }))]}
             />
           ) : (
             <Select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              aria-label="Filter by category"
+              aria-label={t('rq.filterCategoryAria')}
               className="w-auto py-1.5 text-xs font-semibold"
-              options={[{ value: 'all', label: 'All categories' }, ...CATEGORIES.map((c) => ({ value: c, label: c }))]}
+              options={[{ value: 'all', label: t('rq.allCategories') }, ...CATEGORIES.map((c) => ({ value: c, label: t(NFRCAT_KEYS[c]) }))]}
             />
           )}
           <Button
@@ -253,7 +256,7 @@ export default function Requirements() {
               }
             }}
           >
-            Add {tab === 'functional' ? 'FR' : 'NFR'}
+            {tab === 'functional' ? t('rq.addFR') : t('rq.addNFR')}
           </Button>
         </div>
       </Card>
@@ -263,8 +266,8 @@ export default function Requirements() {
         analysis.functionalRequirements.length === 0 ? (
           <EmptyState
             icon={ClipboardList}
-            title="No requirements yet."
-            description="Start documenting what the system needs. A good requirement reads: “The system shall …”."
+            title={t('rq.emptyFRTitle')}
+            description={t('rq.emptyFRDesc')}
             action={
               <Button
                 size="sm"
@@ -280,19 +283,19 @@ export default function Requirements() {
             }
           />
         ) : frList.length === 0 ? (
-          <EmptyState icon={Search} title="Nothing matches your filters." description="Adjust the search or filters above." />
+          <EmptyState icon={Search} title={t('rq.noMatchTitle')} description={t('rq.noMatchDesc')} />
         ) : (
           <Card className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="table-base min-w-[760px]">
                 <thead>
                   <tr>
-                    <th className="w-20">ID</th>
-                    <th>Requirement</th>
-                    <th className="w-32">Priority</th>
-                    <th className="w-36">Source</th>
-                    <th className="w-28">Status</th>
-                    <th className="w-20 text-right">Actions</th>
+                    <th className="w-20">{t('tbl.id')}</th>
+                    <th>{t('tbl.requirement')}</th>
+                    <th className="w-32">{t('tbl.priority')}</th>
+                    <th className="w-36">{t('tbl.source')}</th>
+                    <th className="w-28">{t('tbl.status')}</th>
+                    <th className="w-20 text-right">{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -304,11 +307,11 @@ export default function Requirements() {
                         {r.description && <p className="mt-0.5 text-xs text-muted">{r.description}</p>}
                       </td>
                       <td>
-                        <Badge tone={PRIORITY_TONE[r.priority]}>{r.priority}</Badge>
+                        <Badge tone={PRIORITY_TONE[r.priority]}>{t(MOSCOW_KEYS[r.priority])}</Badge>
                       </td>
                       <td className="text-xs">{r.source || '—'}</td>
                       <td>
-                        <Badge tone={STATUS_TONE[r.status]}>{r.status}</Badge>
+                        <Badge tone={STATUS_TONE[r.status]}>{t(REQSTATUS_KEYS[r.status])}</Badge>
                       </td>
                       <td>
                         <div className="flex justify-end gap-1">
@@ -324,8 +327,8 @@ export default function Requirements() {
                               })
                               setFRModal(true)
                             }}
-                            aria-label={`Edit ${r.code}`}
-                            title="Edit"
+                            aria-label={t('rq.editCode', { code: r.code })}
+                            title={t('common.edit')}
                             className="icon-btn h-8 w-8"
                           >
                             <Pencil className="h-3.5 w-3.5" />
@@ -335,10 +338,10 @@ export default function Requirements() {
                               updateAnalysis(analysis.caseId, (d) => {
                                 d.functionalRequirements = d.functionalRequirements.filter((x) => x.id !== r.id)
                               })
-                              toast.info(`${r.code} removed`)
+                              toast.info(t('rq.removed', { code: r.code }))
                             }}
-                            aria-label={`Delete ${r.code}`}
-                            title="Delete"
+                            aria-label={`${t('common.delete')} ${r.code}`}
+                            title={t('common.delete')}
                             className="icon-btn h-8 w-8 hover:!bg-rose-500/10 hover:!text-rose-500"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -355,8 +358,8 @@ export default function Requirements() {
       ) : analysis.nonFunctionalRequirements.length === 0 ? (
         <EmptyState
           icon={ShieldCheck}
-          title="No non-functional requirements yet."
-          description="Define how well the system must perform: speed, security, usability, reliability, scalability, availability."
+          title={t('rq.emptyNFRTitle')}
+          description={t('rq.emptyNFRDesc')}
           action={
             <Button
               size="sm"
@@ -372,18 +375,18 @@ export default function Requirements() {
           }
         />
       ) : nfrList.length === 0 ? (
-        <EmptyState icon={Search} title="Nothing matches your filters." description="Adjust the search or filters above." />
+        <EmptyState icon={Search} title={t('rq.noMatchTitle')} description={t('rq.noMatchDesc')} />
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="table-base min-w-[720px]">
               <thead>
                 <tr>
-                  <th className="w-24">ID</th>
-                  <th>Requirement</th>
-                  <th className="w-32">Category</th>
-                  <th className="w-32">Priority</th>
-                  <th className="w-20 text-right">Actions</th>
+                  <th className="w-24">{t('tbl.id')}</th>
+                  <th>{t('tbl.requirement')}</th>
+                  <th className="w-32">{t('tbl.category')}</th>
+                  <th className="w-32">{t('tbl.priority')}</th>
+                  <th className="w-20 text-right">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -395,10 +398,10 @@ export default function Requirements() {
                       {r.description && <p className="mt-0.5 text-xs text-muted">{r.description}</p>}
                     </td>
                     <td>
-                      <Badge tone="violet">{r.category}</Badge>
+                      <Badge tone="violet">{t(NFRCAT_KEYS[r.category])}</Badge>
                     </td>
                     <td>
-                      <Badge tone={PRIORITY_TONE[r.priority]}>{r.priority}</Badge>
+                      <Badge tone={PRIORITY_TONE[r.priority]}>{t(MOSCOW_KEYS[r.priority])}</Badge>
                     </td>
                     <td>
                       <div className="flex justify-end gap-1">
@@ -413,8 +416,8 @@ export default function Requirements() {
                             })
                             setNFRModal(true)
                           }}
-                          aria-label={`Edit ${r.code}`}
-                          title="Edit"
+                          aria-label={t('rq.editCode', { code: r.code })}
+                          title={t('common.edit')}
                           className="icon-btn h-8 w-8"
                         >
                           <Pencil className="h-3.5 w-3.5" />
@@ -424,10 +427,10 @@ export default function Requirements() {
                             updateAnalysis(analysis.caseId, (d) => {
                               d.nonFunctionalRequirements = d.nonFunctionalRequirements.filter((x) => x.id !== r.id)
                             })
-                            toast.info(`${r.code} removed`)
+                            toast.info(t('rq.removed', { code: r.code }))
                           }}
-                          aria-label={`Delete ${r.code}`}
-                          title="Delete"
+                          aria-label={`${t('common.delete')} ${r.code}`}
+                          title={t('common.delete')}
                           className="icon-btn h-8 w-8 hover:!bg-rose-500/10 hover:!text-rose-500"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -446,48 +449,58 @@ export default function Requirements() {
       <Modal
         open={frModal}
         onClose={() => setFRModal(false)}
-        title={editingFR ? `Edit ${editingFR.code}` : 'New Functional Requirement'}
-        subtitle="What must the system do?"
+        title={editingFR ? t('rq.editCode', { code: editingFR.code }) : t('rq.newFR')}
+        subtitle={t('rq.frSub')}
         wide
       >
         <div className="grid gap-4">
-          <Field label="Requirement *" hint="Start with “The system shall …”">
+          <Field label={t('rq.requirementLabel')} hint={t('rq.frHint')}>
             <Input
               value={frForm.requirement}
               onChange={(e) => setFRForm({ ...frForm, requirement: e.target.value })}
-              placeholder="The system shall record every stock movement in real time"
-              aria-label="Requirement statement"
+              placeholder={t('rq.frPh')}
+              aria-label={t('rq.statementAria')}
             />
           </Field>
-          <Field label="Description">
+          <Field label={t('pr.description')}>
             <Textarea
               value={frForm.description}
               onChange={(e) => setFRForm({ ...frForm, description: e.target.value })}
-              placeholder="Details, acceptance criteria, edge cases…"
+              placeholder={t('rq.descPh')}
             />
           </Field>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Priority (MoSCoW)">
-              <Select value={frForm.priority} onChange={(e) => setFRForm({ ...frForm, priority: e.target.value as MoSCoW })} options={PRIORITIES} aria-label="Priority" />
+            <Field label={t('rq.priorityMoscow')}>
+              <Select
+                value={frForm.priority}
+                onChange={(e) => setFRForm({ ...frForm, priority: e.target.value as MoSCoW })}
+                options={PRIORITIES.map((p) => ({ value: p, label: t(MOSCOW_KEYS[p]) }))}
+                aria-label={t('tbl.priority')}
+              />
             </Field>
-            <Field label="Source">
+            <Field label={t('tbl.source')}>
               <Input
                 value={frForm.source}
                 onChange={(e) => setFRForm({ ...frForm, source: e.target.value })}
-                placeholder="e.g. Store Manager"
-                aria-label="Source"
+                placeholder={t('rq.sourcePh')}
+                aria-label={t('tbl.source')}
               />
             </Field>
-            <Field label="Status">
-              <Select value={frForm.status} onChange={(e) => setFRForm({ ...frForm, status: e.target.value as ReqStatus })} options={STATUSES} aria-label="Status" />
+            <Field label={t('tbl.status')}>
+              <Select
+                value={frForm.status}
+                onChange={(e) => setFRForm({ ...frForm, status: e.target.value as ReqStatus })}
+                options={STATUSES.map((s) => ({ value: s, label: t(REQSTATUS_KEYS[s]) }))}
+                aria-label={t('tbl.status')}
+              />
             </Field>
           </div>
         </div>
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setFRModal(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
-          <Button onClick={saveFR}>{editingFR ? 'Save Changes' : 'Add Requirement'}</Button>
+          <Button onClick={saveFR}>{editingFR ? t('form.saveChanges') : t('rq.addReq')}</Button>
         </div>
       </Modal>
 
@@ -495,40 +508,50 @@ export default function Requirements() {
       <Modal
         open={nfrModal}
         onClose={() => setNFRModal(false)}
-        title={editingNFR ? `Edit ${editingNFR.code}` : 'New Non-Functional Requirement'}
-        subtitle="How well must the system behave?"
+        title={editingNFR ? t('rq.editCode', { code: editingNFR.code }) : t('rq.newNFR')}
+        subtitle={t('rq.nfrSub')}
         wide
       >
         <div className="grid gap-4">
-          <Field label="Requirement *" hint="Make it measurable when possible">
+          <Field label={t('rq.requirementLabel')} hint={t('rq.nfrHint')}>
             <Input
               value={nfrForm.requirement}
               onChange={(e) => setNFRForm({ ...nfrForm, requirement: e.target.value })}
-              placeholder="Stock lookup results appear within 2 seconds"
-              aria-label="Requirement statement"
+              placeholder={t('rq.nfrPh')}
+              aria-label={t('rq.statementAria')}
             />
           </Field>
-          <Field label="Description">
+          <Field label={t('pr.description')}>
             <Textarea
               value={nfrForm.description}
               onChange={(e) => setNFRForm({ ...nfrForm, description: e.target.value })}
-              placeholder="Thresholds, rationale, measurement method…"
+              placeholder={t('rq.nfrDescPh')}
             />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Category">
-              <Select value={nfrForm.category} onChange={(e) => setNFRForm({ ...nfrForm, category: e.target.value as NFRCategory })} options={CATEGORIES} aria-label="Category" />
+            <Field label={t('tbl.category')}>
+              <Select
+                value={nfrForm.category}
+                onChange={(e) => setNFRForm({ ...nfrForm, category: e.target.value as NFRCategory })}
+                options={CATEGORIES.map((c) => ({ value: c, label: t(NFRCAT_KEYS[c]) }))}
+                aria-label={t('tbl.category')}
+              />
             </Field>
-            <Field label="Priority">
-              <Select value={nfrForm.priority} onChange={(e) => setNFRForm({ ...nfrForm, priority: e.target.value as MoSCoW })} options={PRIORITIES} aria-label="Priority" />
+            <Field label={t('tbl.priority')}>
+              <Select
+                value={nfrForm.priority}
+                onChange={(e) => setNFRForm({ ...nfrForm, priority: e.target.value as MoSCoW })}
+                options={PRIORITIES.map((p) => ({ value: p, label: t(MOSCOW_KEYS[p]) }))}
+                aria-label={t('tbl.priority')}
+              />
             </Field>
           </div>
         </div>
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setNFRModal(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
-          <Button onClick={saveNFR}>{editingNFR ? 'Save Changes' : 'Add Requirement'}</Button>
+          <Button onClick={saveNFR}>{editingNFR ? t('form.saveChanges') : t('rq.addReq')}</Button>
         </div>
       </Modal>
     </div>

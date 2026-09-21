@@ -17,6 +17,9 @@ import { useApp } from '../context/AppContext'
 import { getCase } from '../data/cases'
 import { computeOverallProgress } from '../lib/scoring'
 import { cn } from '../lib/utils'
+import { DIFF_KEYS, INDUSTRY_KEYS } from '../i18n'
+import type { TranslationKey } from '../i18n'
+import { useCaseText, useI18n } from '../i18n/useI18n'
 import { Badge, ProgressBar } from '../components/ui'
 import type { AnalysisStepKey, CaseProgress, CaseScenario, IconType } from '../types'
 
@@ -25,14 +28,14 @@ export interface AnalysisCtx {
   cs: CaseScenario
 }
 
-const STEPS: { key: AnalysisStepKey; label: string; icon: IconType }[] = [
-  { key: 'investigation', label: 'Investigation', icon: Users },
-  { key: 'problems', label: 'Problems', icon: AlertCircle },
-  { key: 'requirements', label: 'Requirements', icon: ClipboardList },
-  { key: 'modeling', label: 'Modeling', icon: GitBranch },
-  { key: 'solution', label: 'Solution', icon: Lightbulb },
-  { key: 'evaluation', label: 'Evaluation', icon: Gauge },
-  { key: 'report', label: 'Report', icon: FileText },
+const STEPS: { key: AnalysisStepKey; labelKey: TranslationKey; icon: IconType }[] = [
+  { key: 'investigation', labelKey: 'steps.investigation', icon: Users },
+  { key: 'problems', labelKey: 'steps.problems', icon: AlertCircle },
+  { key: 'requirements', labelKey: 'steps.requirements', icon: ClipboardList },
+  { key: 'modeling', labelKey: 'steps.modeling', icon: GitBranch },
+  { key: 'solution', labelKey: 'steps.solution', icon: Lightbulb },
+  { key: 'evaluation', labelKey: 'steps.evaluation', icon: Gauge },
+  { key: 'report', labelKey: 'steps.report', icon: FileText },
 ]
 
 export function stepHasContent(a: CaseProgress, step: AnalysisStepKey): boolean {
@@ -56,11 +59,12 @@ export function stepHasContent(a: CaseProgress, step: AnalysisStepKey): boolean 
 
 function Stepper({ analysis, caseId }: { analysis: CaseProgress; caseId: string }) {
   const location = useLocation()
+  const { t } = useI18n()
   const current = (location.pathname.split('/').pop() || 'investigation') as AnalysisStepKey
   const currentIdx = Math.max(0, STEPS.findIndex((s) => s.key === current))
 
   return (
-    <nav aria-label="Analysis workflow" className="overflow-x-auto pb-1">
+    <nav aria-label={t('al.workflow')} className="overflow-x-auto pb-1">
       <ol className="flex min-w-max items-center gap-1 sm:gap-2">
         {STEPS.map((s, i) => {
           const Icon = s.icon
@@ -92,7 +96,7 @@ function Stepper({ analysis, caseId }: { analysis: CaseProgress; caseId: string 
                 >
                   {done && !active ? <Check className="h-3 w-3" /> : <Icon className="h-3 w-3" />}
                 </span>
-                <span className="hidden md:inline">{s.label}</span>
+                <span className="hidden md:inline">{t(s.labelKey)}</span>
               </NavLink>
               {i < STEPS.length - 1 && (
                 <span
@@ -117,8 +121,10 @@ export default function AnalysisLayout() {
   const { id } = useParams()
   const location = useLocation()
   const { data, setLastStep, lastSavedAt } = useApp()
+  const { t } = useI18n()
 
-  const cs = id ? getCase(id) : undefined
+  const rawCase = id ? getCase(id) : undefined
+  const cs = useCaseText(rawCase)
   const analysis = id ? data.analyses[id] : undefined
 
   const step = useMemo(() => {
@@ -147,7 +153,7 @@ export default function AnalysisLayout() {
           to={`/cases/${cs.id}`}
           className="inline-flex w-fit items-center gap-1.5 text-xs font-semibold text-muted transition hover:text-indigo-500"
         >
-          <ArrowLeft className="h-3.5 w-3.5" /> Case Brief
+          <ArrowLeft className="h-3.5 w-3.5" /> {t('al.caseBrief')}
         </NavLink>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-3.5">
@@ -161,12 +167,12 @@ export default function AnalysisLayout() {
                 </h1>
                 {analysis.status === 'completed' && (
                   <Badge tone="emerald" icon={CheckCircle2}>
-                    Completed
+                    {t('status.completed')}
                   </Badge>
                 )}
               </div>
               <p className="mt-0.5 text-xs text-muted">
-                {cs.industry} · {cs.difficulty}
+                {t(INDUSTRY_KEYS[cs.industry])} · {t(DIFF_KEYS[cs.difficulty])}
               </p>
             </div>
           </div>
@@ -178,11 +184,11 @@ export default function AnalysisLayout() {
               className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-600 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300"
               role="status"
             >
-              <CheckCircle2 className="h-3.5 w-3.5" /> Saved
+              <CheckCircle2 className="h-3.5 w-3.5" /> {t('common.saved')}
             </motion.span>
             <div className="hidden w-40 sm:block">
               <div className="mb-1 flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted">
-                <span>Progress</span>
+                <span>{t('al.progress')}</span>
                 <span>{pct}%</span>
               </div>
               <ProgressBar value={pct} />

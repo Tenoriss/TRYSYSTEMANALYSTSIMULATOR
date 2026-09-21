@@ -44,11 +44,15 @@ export function loadPersistedData(): AppData | null {
     const rawProfile = localStorage.getItem(STORAGE_KEYS.profile)
     if (!rawProfile) return null
     const profile = JSON.parse(rawProfile) as AppData['profile']
+    const storedSettings = readJSON<Partial<AppData['settings']>>(STORAGE_KEYS.settings, {})
     return {
       profile,
       analyses: readJSON(STORAGE_KEYS.analyses, {}),
       unlocked: readJSON(STORAGE_KEYS.unlocked, {}),
-      settings: readJSON(STORAGE_KEYS.settings, { theme: 'dark' }),
+      settings: {
+        theme: storedSettings.theme ?? 'dark',
+        language: storedSettings.language === 'id' ? 'id' : 'en',
+      },
     }
   } catch {
     return null

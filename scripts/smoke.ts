@@ -1,6 +1,11 @@
 /* Node smoke test for core logic — run: npx esbuild scripts/smoke.ts --bundle --platform=node --format=esm --outfile=.smoke.mjs && node .smoke.mjs */
 import { computeEvaluation, evaluationGate, levelForXP, problemPriority, riskScore, applyStreak } from '../src/lib/scoring'
 import { evaluateAchievements } from '../src/lib/achievements'
+import { CASES } from '../src/data/cases'
+import { CASES_ID } from '../src/data/cases.id'
+import { en } from '../src/i18n/en'
+import { idDict } from '../src/i18n/id'
+import { tr } from '../src/i18n'
 import type { AppData, CaseProgress } from '../src/types'
 
 let failures = 0
@@ -142,13 +147,33 @@ console.log('achievements')
     analyses: { 'retail-inventory': mkAnalysis({ processSteps: Array.from({ length: 5 }, (_, i) => ({ id: `${i}`, type: 'process' as const, label: 'x', note: '' })) }) },
     profile: { xp: 2000, streak: 1, lastActivityDate: null, onboarded: true, createdAt: iso() },
     unlocked: {},
-    settings: { theme: 'dark' },
+    settings: { theme: 'dark', language: 'en' },
   }
   const fresh = evaluateAchievements(d).map((a) => a.id)
   check('first-steps unlocked by starting a case', fresh.includes('first-steps'))
   check('process-mapper unlocked at 5 steps', fresh.includes('process-mapper'))
   check('senior-analyst unlocked at level 5', fresh.includes('senior-analyst'))
   check('problem-solver NOT unlocked (no completed cases)', !fresh.includes('problem-solver'))
+}
+
+console.log('i18n')
+{
+  const enKeys = Object.keys(en)
+  const idKeys = Object.keys(idDict)
+  check('en/id dictionary key parity', enKeys.length === idKeys.length && enKeys.every((k) => idKeys.includes(k)))
+  check('no empty Indonesian strings', idKeys.every((k) => (idDict as Record<string, string>)[k].trim().length > 0))
+  check('var interpolation', tr('en', 'status.level', { level: 3 }) === 'Level 3')
+  check('indonesian renders Indonesian', tr('id', 'nav.dashboard') === 'Dasbor')
+  check('unknown key falls back to EN', tr('id', 'common.save') === 'Simpan')
+  check('every built-in case has Indonesian content', CASES.every((c) => {
+    const o = CASES_ID[c.id]
+    return !!o && o.title.trim().length > 0 && o.interviewQuestions.length > 0
+  }))
+  check('id case content differs from english', CASES_ID[CASES[0].id].title !== CASES[0].title)
+  const evEn = computeEvaluation(mkAnalysis({}), (k) => tr('en', k))
+  const evId = computeEvaluation(mkAnalysis({}), (k) => tr('id', k))
+  check('evaluator feedback localizes', evId.improvements[0] !== evEn.improvements[0])
+  check('gate checks are translation keys', evaluationGate(mkAnalysis({})).checks.every((c) => c.key.startsWith('ev.gate')))
 }
 
 console.log(failures === 0 ? '\nALL CHECKS PASSED' : `\n${failures} CHECKS FAILED`)

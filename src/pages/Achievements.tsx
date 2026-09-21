@@ -7,9 +7,12 @@ import { ACHIEVEMENTS } from '../lib/achievements'
 import { levelForXP } from '../lib/scoring'
 import { formatDate } from '../lib/utils'
 import { cn } from '../lib/utils'
+import { achKeys, LEVEL_TITLE_KEYS } from '../i18n'
+import { useI18n } from '../i18n/useI18n'
 
 export default function Achievements() {
   const { data } = useApp()
+  const { t, lang } = useI18n()
   const lvl = levelForXP(data.profile.xp)
 
   const items = useMemo(
@@ -28,8 +31,8 @@ export default function Achievements() {
   return (
     <div className="space-y-6">
       <SectionHeader
-        title="Achievements"
-        subtitle="Milestones unlocked through real analysis work — every one is earned from your own data."
+        title={t('achPage.title')}
+        subtitle={t('achPage.subtitle')}
       />
 
       <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
@@ -39,14 +42,18 @@ export default function Achievements() {
           </span>
           <div>
             <p className="font-display text-lg font-bold text-slate-900 dark:text-white">
-              {unlockedCount} / {items.length} unlocked
+              {t('achPage.unlockedOf', { unlocked: unlockedCount, total: items.length })}
             </p>
-            <p className="text-xs text-muted">You are Level {lvl.info.level} — {lvl.info.title}</p>
+            <p className="text-xs text-muted">
+              {t('achPage.levelLine', { level: lvl.info.level, title: t(LEVEL_TITLE_KEYS[lvl.info.level - 1]) })}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2 rounded-xl bg-indigo-500/[0.07] px-3.5 py-2 dark:bg-indigo-400/10">
           <Zap className="h-4 w-4 text-indigo-500 dark:text-indigo-300" />
-          <p className="text-sm font-bold text-indigo-600 dark:text-indigo-300">+{totalBonus} XP from achievements</p>
+          <p className="text-sm font-bold text-indigo-600 dark:text-indigo-300">
+            {t('achPage.xpFrom', { xp: totalBonus })}
+          </p>
         </div>
       </Card>
 
@@ -86,20 +93,22 @@ export default function Achievements() {
                     {unlocked ? <Icon className="h-5 w-5" /> : <Lock className="h-4.5 w-4.5" />}
                   </span>
                   <div className="min-w-0">
-                    <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">{a.title}</h3>
-                    <p className="mt-0.5 text-xs leading-relaxed text-muted">{a.description}</p>
+                    <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white">
+                      {t(achKeys(a.id).title)}
+                    </h3>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted">{t(achKeys(a.id).desc)}</p>
                   </div>
                 </div>
                 <div className="mt-4">
                   {unlocked ? (
                     <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-300">
-                      Unlocked {formatDate(a.unlockedAt!)} · +{a.xp} XP
+                      {t('achPage.unlocked', { date: formatDate(a.unlockedAt!, lang), xp: a.xp })}
                     </p>
                   ) : (
                     <>
                       <ProgressBar value={a.pct} barClass={a.pct > 60 ? undefined : 'from-slate-400 to-slate-500'} />
                       <p className="mt-1.5 text-[11px] font-medium text-muted">
-                        {a.progress} / {a.target} · reward +{a.xp} XP
+                        {t('achPage.progress', { progress: a.progress, target: a.target, xp: a.xp })}
                       </p>
                     </>
                   )}
