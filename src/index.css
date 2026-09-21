@@ -1,0 +1,182 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+  body {
+    @apply bg-[#eef1f7] font-sans text-slate-800 dark:bg-[#05080f] dark:text-slate-200;
+  }
+  ::selection {
+    @apply bg-indigo-500/30;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-slate-300/70 dark:bg-white/10;
+  }
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+  }
+}
+
+@layer components {
+  /* Surfaces */
+  .card {
+    @apply rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.05)] dark:border-white/[0.07] dark:bg-[#0c1322] dark:shadow-[0_2px_12px_rgba(0,0,0,0.35)];
+  }
+  .card-hover {
+    @apply transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-300/70 hover:shadow-lg dark:hover:border-indigo-400/30 dark:hover:shadow-glow-sm;
+  }
+  .page-bg {
+    background-image:
+      radial-gradient(60rem 30rem at 110% -10%, rgba(99, 102, 241, 0.1), transparent 60%),
+      radial-gradient(50rem 26rem at -10% 0%, rgba(34, 211, 238, 0.07), transparent 55%);
+  }
+  .dark .page-bg {
+    background-image:
+      radial-gradient(60rem 30rem at 110% -10%, rgba(99, 102, 241, 0.14), transparent 60%),
+      radial-gradient(50rem 26rem at -10% 0%, rgba(34, 211, 238, 0.09), transparent 55%);
+  }
+
+  /* Typography helpers */
+  .h-section {
+    @apply font-display text-lg font-semibold tracking-tight text-slate-900 dark:text-white;
+  }
+  .text-muted {
+    @apply text-slate-500 dark:text-slate-400;
+  }
+
+  /* Form controls */
+  .label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400;
+  }
+  .input {
+    @apply w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 dark:border-white/[0.09] dark:bg-white/[0.04] dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-indigo-400/60 dark:focus:bg-white/[0.05] dark:focus:ring-indigo-400/10;
+  }
+  .textarea {
+    @apply input min-h-[84px] resize-y leading-relaxed;
+  }
+  select.input {
+    @apply appearance-none bg-no-repeat pr-8;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right 0.65rem center;
+  }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold outline-none transition-all duration-150 focus-visible:ring-4 focus-visible:ring-indigo-500/25 disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-md {
+    @apply px-4 py-2;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+  .btn-lg {
+    @apply px-5 py-2.5 text-[15px];
+  }
+  .btn-primary {
+    @apply btn bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-sm shadow-indigo-500/30 hover:from-indigo-400 hover:to-indigo-600 active:scale-[0.98] dark:from-indigo-500 dark:to-blue-600 dark:hover:from-indigo-400 dark:hover:to-blue-500;
+  }
+  .btn-secondary {
+    @apply btn border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-indigo-300 hover:text-indigo-600 active:scale-[0.98] dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:border-indigo-400/40 dark:hover:text-indigo-300;
+  }
+  .btn-ghost {
+    @apply btn text-slate-500 hover:bg-slate-100 hover:text-slate-800 active:scale-[0.98] dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-slate-100;
+  }
+  .btn-danger {
+    @apply btn bg-rose-600 text-white shadow-sm shadow-rose-600/30 hover:bg-rose-500 active:scale-[0.98];
+  }
+  .icon-btn {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 outline-none transition hover:bg-slate-100 hover:text-slate-800 focus-visible:ring-4 focus-visible:ring-indigo-500/25 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-slate-100;
+  }
+
+  /* Badges & chips */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold leading-4;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300;
+  }
+
+  /* Table */
+  .table-base {
+    @apply w-full border-collapse text-sm;
+  }
+  .table-base thead th {
+    @apply whitespace-nowrap border-b border-slate-200 px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:border-white/[0.07] dark:text-slate-500;
+  }
+  .table-base tbody td {
+    @apply border-b border-slate-100 px-3 py-2.5 align-top text-slate-600 dark:border-white/[0.05] dark:text-slate-300;
+  }
+  .table-base tbody tr {
+    @apply transition-colors hover:bg-slate-50/80 dark:hover:bg-white/[0.02];
+  }
+
+  /* Nav */
+  .nav-item {
+    @apply flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/[0.05] dark:hover:text-slate-100;
+  }
+  .nav-item-active {
+    @apply bg-gradient-to-r from-indigo-500/10 to-cyan-400/[0.06] text-indigo-600 dark:from-indigo-500/[0.16] dark:to-cyan-400/[0.08] dark:text-indigo-300;
+  }
+
+  /* Divider */
+  .divider {
+    @apply border-t border-slate-200/80 dark:border-white/[0.06];
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-indigo-500 via-blue-500 to-cyan-400 bg-clip-text text-transparent;
+  }
+}
+
+/* ----------------------------------- Print ---------------------------------- */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+  }
+  .lg\:pl-64 {
+    padding-left: 0 !important;
+  }
+  .card,
+  .print-area {
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+    background: white !important;
+    break-inside: avoid;
+  }
+  .text-muted,
+  p,
+  li,
+  td,
+  th,
+  dd,
+  dt {
+    color: #334155 !important;
+  }
+  h1,
+  h2,
+  h3,
+  .h-section {
+    color: #0f172a !important;
+  }
+  @page {
+    margin: 1.4cm;
+  }
+}
