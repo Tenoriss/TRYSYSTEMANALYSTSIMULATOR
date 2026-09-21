@@ -231,6 +231,21 @@ export interface Settings {
   language: 'en' | 'id'
 }
 
+/* ---------------------------------- Accounts --------------------------------- */
+
+export type AccountRole = 'mahasiswa' | 'pelajar' | 'guru' | 'dosen' | 'undisclosed' | 'other'
+
+export interface Account {
+  id: string
+  name: string
+  email: string
+  passwordHash: string
+  role: AccountRole
+  /** Free-text role when role === 'other'. */
+  customRole?: string
+  createdAt: string
+}
+
 export interface AppData {
   analyses: Record<string, CaseProgress>
   profile: Profile

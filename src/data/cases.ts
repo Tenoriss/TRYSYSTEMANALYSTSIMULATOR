@@ -7,6 +7,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import type { CaseScenario } from '../types'
+import { getStoredCase, hydrateCase } from './customCases'
 
 export const CASES: CaseScenario[] = [
   {
@@ -396,5 +397,9 @@ export const CASE_CATEGORIES: { id: string; label: string }[] = [
 ]
 
 export function getCase(id: string): CaseScenario | undefined {
-  return CASES.find((c) => c.id === id)
+  const builtin = CASES.find((c) => c.id === id)
+  if (builtin) return builtin
+  // Custom (admin-authored) cases live in LocalStorage.
+  const stored = getStoredCase(id)
+  return stored ? hydrateCase(stored) : undefined
 }

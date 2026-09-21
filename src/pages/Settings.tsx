@@ -7,9 +7,11 @@ import {
   Download,
   FileUp,
   Globe,
+  LogOut,
   Monitor,
   Moon,
   Palette,
+  ShieldCheck,
   Sun,
   Trash2,
   Upload,
@@ -17,13 +19,16 @@ import {
 import { Button, Card, SectionHeader, Segmented } from '../components/ui'
 import { ConfirmDialog } from '../components/Modal'
 import { useApp } from '../context/AppContext'
+import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
+import { ROLE_KEYS } from '../i18n'
 import { useI18n } from '../i18n/useI18n'
 import type { Lang } from '../i18n'
 import type { Theme } from '../types'
 
 export default function Settings() {
-  const { data, setTheme, setLanguage, exportData, importData, clearAll } = useApp()
+  const { data, setTheme, setLanguage, exportData, importData, clearAll, isAdmin } = useApp()
+  const { account, logout } = useAuth()
   const { t } = useI18n()
   const toast = useToast()
   const navigate = useNavigate()
@@ -55,6 +60,53 @@ export default function Settings() {
       <SectionHeader title={t('st.title')} subtitle={t('st.subtitle')} />
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+        {/* Account */}
+        {account && (
+          <Card className="p-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-500 font-display text-base font-bold text-white">
+                  {account.name
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((w) => w[0]?.toUpperCase())
+                    .join('')}
+                </span>
+                <div>
+                  <h2 className="font-display text-base font-semibold text-slate-900 dark:text-white">
+                    {t('st.account')}
+                  </h2>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                    {t('st.signedInAs')} {account.name}
+                  </p>
+                  <p className="text-xs text-muted">
+                    {account.email} ·{' '}
+                    {account.role === 'other' ? (account.customRole ?? t('role.other')) : t(ROLE_KEYS[account.role])}
+                    {isAdmin && (
+                      <span className="ml-1.5 inline-flex items-center gap-1 rounded-md bg-violet-500/10 px-1.5 py-0.5 align-middle text-[10px] font-bold uppercase tracking-wide text-violet-500 dark:text-violet-300">
+                        <ShieldCheck className="h-3 w-3" /> {t('admin.badge')}
+                      </span>
+                    )}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-muted">{t('st.accountDesc')}</p>
+                </div>
+              </div>
+              <Button
+                variant="secondary"
+                icon={LogOut}
+                onClick={() => {
+                  logout()
+                  navigate('/login')
+                }}
+              >
+                {t('menu.logout')}
+              </Button>
+            </div>
+            {!isAdmin && <p className="mt-3 text-xs text-muted">{t('admin.hint')}</p>}
+          </Card>
+        )}
+
         {/* Appearance */}
         <Card className="p-6">
           <div className="flex items-center gap-3">

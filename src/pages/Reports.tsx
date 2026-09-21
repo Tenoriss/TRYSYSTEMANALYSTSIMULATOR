@@ -5,7 +5,7 @@ import { Badge, Button, Card, EmptyState } from '../components/ui'
 import { useApp } from '../context/AppContext'
 import { getCase } from '../data/cases'
 import { formatDate } from '../lib/utils'
-import { INDUSTRY_KEYS } from '../i18n'
+import { industryText } from '../i18n'
 import { localizeCase, useI18n } from '../i18n/useI18n'
 
 export default function Reports() {
@@ -55,7 +55,7 @@ export default function Reports() {
                           {c.title}
                         </h3>
                         <p className="text-xs text-muted">
-                          {t(INDUSTRY_KEYS[c.industry])} · {t('rep.docType')}
+                          {industryText(c.industry, lang)} · {t('rep.docType')}
                         </p>
                       </div>
                     </div>

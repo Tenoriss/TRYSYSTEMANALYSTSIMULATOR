@@ -8,18 +8,22 @@ import {
   Flame,
   Globe,
   LayoutDashboard,
+  LogOut,
   Monitor,
   Moon,
+  PlusCircle,
   Radar,
   Search,
   Settings as SettingsIcon,
+  ShieldCheck,
   Sun,
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import { useAuth } from '../context/AuthContext'
 import { getCase } from '../data/cases'
 import { levelForXP } from '../lib/scoring'
 import { cn } from '../lib/utils'
-import { LEVEL_TITLE_KEYS } from '../i18n'
+import { LEVEL_TITLE_KEYS, ROLE_KEYS } from '../i18n'
 import type { TranslationKey } from '../i18n'
 import { useI18n } from '../i18n/useI18n'
 import { SearchPalette } from './SearchPalette'
@@ -155,6 +159,118 @@ function LevelPopover() {
   )
 }
 
+/** Account chip + dropdown: role, admin badge, case authoring shortcut, logout. */
+function UserMenu() {
+  const { data, isAdmin } = useApp()
+  const { account, logout } = useAuth()
+  const { t } = useI18n()
+  const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const lvl = levelForXP(data.profile.xp)
+
+  useEffect(() => {
+    if (!open) return
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('keydown', onEsc)
+    return () => {
+      document.removeEventListener('mousedown', onDoc)
+      document.removeEventListener('keydown', onEsc)
+    }
+  }, [open])
+
+  if (!account) return null
+  const roleLabel = account.role === 'other' ? (account.customRole ?? t('role.other')) : t(ROLE_KEYS[account.role])
+  const initials = account.name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join('')
+
+  const item = 'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/[0.06] dark:hover:text-white'
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-label={t('menu.account')}
+        className="flex items-center gap-2.5 border-l border-slate-200 pl-3 dark:border-white/10"
+      >
+        <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 font-display text-sm font-bold text-white">
+          {initials || '?'}
+          {isAdmin && (
+            <span
+              title={t('admin.badge')}
+              className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-violet-500 text-white dark:border-[#05080f]"
+            >
+              <ShieldCheck className="h-2.5 w-2.5" />
+            </span>
+          )}
+        </span>
+        <span className="hidden leading-tight sm:block">
+          <span className="block max-w-32 truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
+            {account.name}
+          </span>
+          <span className="block text-[11px] text-muted">
+            {roleLabel} · {t(LEVEL_TITLE_KEYS[lvl.info.level - 1])}
+          </span>
+        </span>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-12 z-50 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-white/10 dark:bg-[#0d1526]">
+          <div className="px-3 py-2.5">
+            <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{account.name}</p>
+            <p className="truncate text-xs text-muted">{account.email}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-muted dark:bg-white/[0.07]">
+                {t('menu.roleBadge')}: {roleLabel}
+              </span>
+              {isAdmin && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-500 dark:text-violet-300">
+                  <ShieldCheck className="h-3 w-3" /> {t('admin.badge')}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="my-1 h-px bg-slate-100 dark:bg-white/[0.06]" />
+          {isAdmin && (
+            <button
+              className={item}
+              onClick={() => {
+                setOpen(false)
+                navigate('/admin/cases/new')
+              }}
+            >
+              <PlusCircle className="h-4 w-4" />
+              {t('cases.addCase')}
+            </button>
+          )}
+          <button
+            className={item}
+            onClick={() => {
+              setOpen(false)
+              logout()
+              navigate('/login')
+            }}
+          >
+            <LogOut className="h-4 w-4" />
+            {t('menu.logout')}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Sidebar() {
   const { data } = useApp()
   const { t } = useI18n()
@@ -213,7 +329,6 @@ function Sidebar() {
 function TopBar({ onSearch }: { onSearch: () => void }) {
   const { data } = useApp()
   const { t } = useI18n()
-  const lvl = levelForXP(data.profile.xp)
   const location = useLocation()
   const current = useMemo(
     () =>
@@ -265,16 +380,7 @@ function TopBar({ onSearch }: { onSearch: () => void }) {
         <LanguageToggle />
         <ThemeToggle />
         <LevelPopover />
-
-        <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3 dark:border-white/10">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 font-display text-sm font-bold text-white">
-            {t('profile.analyst').charAt(0)}
-          </span>
-          <span className="hidden leading-tight sm:block">
-            <span className="block text-sm font-semibold text-slate-800 dark:text-slate-100">{t('profile.analyst')}</span>
-            <span className="block text-[11px] text-muted">{t(LEVEL_TITLE_KEYS[lvl.info.level - 1])}</span>
-          </span>
-        </div>
+        <UserMenu />
       </div>
     </header>
   )

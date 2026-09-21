@@ -7,7 +7,7 @@ import { useApp } from '../../context/AppContext'
 import type { AnalysisCtx } from '../AnalysisLayout'
 import { riskScore } from '../../lib/scoring'
 import { formatDate } from '../../lib/utils'
-import { DIFF_KEYS, INDUSTRY_KEYS, MOSCOW_KEYS, NFRCAT_KEYS, REQSTATUS_KEYS, SEV_KEYS, FREQ_KEYS, TRI_KEYS, tr } from '../../i18n'
+import { DIFF_KEYS, MOSCOW_KEYS, NFRCAT_KEYS, REQSTATUS_KEYS, SEV_KEYS, FREQ_KEYS, TRI_KEYS, industryText, tr } from '../../i18n'
 import { useI18n, useCaseText } from '../../i18n/useI18n'
 
 /* ------------------------------ Section shell ------------------------------ */
@@ -74,7 +74,7 @@ export default function Report() {
     const a = analysis
     const critical = a.problems.filter((p) => p.severity === 'Critical' || p.severity === 'High').length
     const parts: string[] = []
-    parts.push(tr(lang, 'rp.exec.intro', { case: cs.title, industry: tr(lang, INDUSTRY_KEYS[cs.industry]) }))
+    parts.push(tr(lang, 'rp.exec.intro', { case: cs.title, industry: industryText(cs.industry, lang) }))
     if (a.stakeholders.length || a.interviews.length)
       parts.push(tr(lang, 'rp.exec.stakeholders', { sh: a.stakeholders.length, iv: a.interviews.length }))
     if (a.problems.length)
@@ -131,7 +131,7 @@ export default function Report() {
                 {cs.title}
               </h1>
               <p className="mt-1 text-sm text-muted">
-                {t(INDUSTRY_KEYS[cs.industry])} · {t(DIFF_KEYS[cs.difficulty])}
+                {industryText(cs.industry, lang)} · {t(DIFF_KEYS[cs.difficulty])}
               </p>
             </div>
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/15 to-cyan-400/10 text-indigo-500 dark:text-indigo-300">

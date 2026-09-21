@@ -1,7 +1,7 @@
 import { en } from './en'
 import type { TranslationKey } from './en'
 import { idDict } from './id'
-import type { Difficulty, Frequency, MoSCoW, NFRCategory, ReqStatus, Severity, Level3 } from '../types'
+import type { AccountRole, Difficulty, Frequency, MoSCoW, NFRCategory, ReqStatus, Severity, Level3 } from '../types'
 
 export type Lang = 'en' | 'id'
 export type { TranslationKey }
@@ -110,4 +110,26 @@ export function achKeys(achievementId: string): { title: TranslationKey; desc: T
     title: `ach.${achievementId}.title` as TranslationKey,
     desc: `ach.${achievementId}.desc` as TranslationKey,
   }
+}
+
+export const ROLE_KEYS: Record<AccountRole, TranslationKey> = {
+  mahasiswa: 'role.mahasiswa',
+  pelajar: 'role.pelajar',
+  guru: 'role.guru',
+  dosen: 'role.dosen',
+  undisclosed: 'role.undisclosed',
+  other: 'role.other',
+}
+
+const ACCOUNT_ROLES: AccountRole[] = ['mahasiswa', 'pelajar', 'guru', 'dosen', 'undisclosed', 'other']
+
+/** Role options for the signup form. */
+export function roleOptions(): AccountRole[] {
+  return ACCOUNT_ROLES
+}
+
+/** Industry text: translated for the built-in six, raw passthrough for custom ones. */
+export function industryText(industry: string, lang: Lang): string {
+  const key = INDUSTRY_KEYS[industry]
+  return key ? tr(lang, key) : industry
 }

@@ -17,7 +17,7 @@ import { Badge, Button, Card } from '../components/ui'
 import { useApp } from '../context/AppContext'
 import { getCase } from '../data/cases'
 import { computeOverallProgress } from '../lib/scoring'
-import { DIFF_KEYS, INDUSTRY_KEYS } from '../i18n'
+import { DIFF_KEYS, industryText } from '../i18n'
 import { useCaseText, useI18n } from '../i18n/useI18n'
 import { DIFFICULTY_TONE } from './Dashboard'
 
@@ -53,7 +53,7 @@ export default function CaseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { data, startCase } = useApp()
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const raw = id ? getCase(id) : undefined
   const cs = useCaseText(raw)
 
@@ -96,7 +96,7 @@ export default function CaseDetail() {
             </span>
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge tone="indigo">{t(INDUSTRY_KEYS[cs.industry])}</Badge>
+                <Badge tone="indigo">{industryText(cs.industry, lang)}</Badge>
                 <Badge tone={DIFFICULTY_TONE[cs.difficulty]}>{t(DIFF_KEYS[cs.difficulty])}</Badge>
                 <Badge tone="slate">{cs.estimatedTime}</Badge>
                 {analysis && (

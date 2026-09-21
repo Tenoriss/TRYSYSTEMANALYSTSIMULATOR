@@ -8,7 +8,7 @@ import { useApp } from '../context/AppContext'
 import { getCase } from '../data/cases'
 import { computeOverallProgress } from '../lib/scoring'
 import { formatDate, relativeTime } from '../lib/utils'
-import { INDUSTRY_KEYS } from '../i18n'
+import { industryText } from '../i18n'
 import { localizeCase, useI18n } from '../i18n/useI18n'
 
 type Filter = 'all' | 'in-progress' | 'completed'
@@ -96,7 +96,7 @@ export default function MyAnalyses() {
                           </div>
                         </div>
                       </td>
-                      <td>{t(INDUSTRY_KEYS[c.industry])}</td>
+                      <td>{industryText(c.industry, lang)}</td>
                       <td>
                         <ProgressBar value={pct} showLabel />
                       </td>

@@ -17,7 +17,7 @@ import { useApp } from '../context/AppContext'
 import { getCase } from '../data/cases'
 import { computeOverallProgress } from '../lib/scoring'
 import { cn } from '../lib/utils'
-import { DIFF_KEYS, INDUSTRY_KEYS } from '../i18n'
+import { DIFF_KEYS, industryText } from '../i18n'
 import type { TranslationKey } from '../i18n'
 import { useCaseText, useI18n } from '../i18n/useI18n'
 import { Badge, ProgressBar } from '../components/ui'
@@ -121,7 +121,7 @@ export default function AnalysisLayout() {
   const { id } = useParams()
   const location = useLocation()
   const { data, setLastStep, lastSavedAt } = useApp()
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
 
   const rawCase = id ? getCase(id) : undefined
   const cs = useCaseText(rawCase)
@@ -172,7 +172,7 @@ export default function AnalysisLayout() {
                 )}
               </div>
               <p className="mt-0.5 text-xs text-muted">
-                {t(INDUSTRY_KEYS[cs.industry])} · {t(DIFF_KEYS[cs.difficulty])}
+                {industryText(cs.industry, lang)} · {t(DIFF_KEYS[cs.difficulty])}
               </p>
             </div>
           </div>

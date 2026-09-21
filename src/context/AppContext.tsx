@@ -6,8 +6,16 @@ import { achKeys, LEVEL_TITLE_KEYS, tr } from '../i18n'
 import type { Lang } from '../i18n'
 import { applyStreak, levelForXP, XP } from '../lib/scoring'
 import { clearAllKeys, loadPersistedData, persistData } from '../lib/storage'
-import type { AppData, CaseProgress, Evaluation, ExportFile, Theme } from '../types'
+import {
+  deleteCustomCase as storageDeleteCase,
+  hydrateCase,
+  loadCustomCases,
+  upsertCustomCase,
+} from '../data/customCases'
+import type { StoredCase } from '../data/customCases'
+import type { AppData, CaseProgress, CaseScenario, Evaluation, ExportFile, Theme } from '../types'
 import { downloadJSON, nowISO, todayKey } from '../lib/utils'
+import { useAuth } from './AuthContext'
 import { useToast } from './ToastContext'
 
 const DEFAULT_DATA: AppData = {
@@ -59,6 +67,13 @@ function emptyAnalysis(caseId: string): CaseProgress {
 export interface AppContextValue {
   data: AppData
   lastSavedAt: number
+  /** True once the user reaches the expert level (Level 5) — grants case-authoring rights. */
+  isAdmin: boolean
+  customCases: CaseScenario[]
+  addCustomCase: (
+    input: Omit<StoredCase, 'id' | 'createdAt' | 'updatedAt'> & { id?: string },
+  ) => boolean
+  removeCustomCase: (id: string) => void
   getAnalysis: (caseId: string) => CaseProgress | undefined
   startCase: (caseId: string) => CaseProgress
   updateAnalysis: (
@@ -87,10 +102,22 @@ function resolveSystemDark(): boolean {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const toast = useToast()
-  const [data, setData] = useState<AppData>(() => loadPersistedData() ?? DEFAULT_DATA)
+  const { account } = useAuth()
+  const accountId = account?.id ?? null
+  const accountIdRef = useRef(accountId)
+  accountIdRef.current = accountId
+
+  const [data, setData] = useState<AppData>(() => loadPersistedData(accountId) ?? DEFAULT_DATA)
   const [lastSavedAt, setLastSavedAt] = useState<number>(Date.now())
+  const [customCases, setCustomCases] = useState<CaseScenario[]>(() => loadCustomCases().map(hydrateCase))
   const dataRef = useRef(data)
   dataRef.current = data
+
+  // Account switched (login/logout/switch user) — load that account's workspace.
+  useEffect(() => {
+    setData(loadPersistedData(accountId) ?? DEFAULT_DATA)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountId])
 
   /* ------------------------------- persistence ------------------------------ */
   const commit = useCallback(
@@ -120,6 +147,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
               title: tr(lang, LEVEL_TITLE_KEYS[levelAfter.level - 1]),
             }),
           )
+          // Reaching the expert level (5) grants admin/developer case-authoring rights.
+          if (levelAfter.level >= 5 && levelBefore < 5) {
+            toast.push('achievement', tr(lang, 'admin.unlocked'), tr(lang, 'admin.unlockedDesc'))
+          }
         }
       }
 
@@ -137,12 +168,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      const ok = persistData(next)
+      const ok = persistData(next, accountIdRef.current)
       if (!ok) toast.error(tr(lang, 'toast.storageError'), tr(lang, 'toast.storageErrorDesc'))
       setLastSavedAt(Date.now())
       setData(next)
     },
     [toast],
+  )
+
+  /* -------------------------------- custom cases ----------------------------- */
+  const refreshCustomCases = useCallback(() => {
+    setCustomCases(loadCustomCases().map(hydrateCase))
+  }, [])
+
+  const addCustomCase = useCallback(
+    (input: Omit<StoredCase, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): boolean => {
+      const result = upsertCustomCase(input)
+      if (!result) {
+        toast.error(
+          tr(dataRef.current.settings.language, 'toast.storageError'),
+          tr(dataRef.current.settings.language, 'toast.storageErrorDesc'),
+        )
+        return false
+      }
+      refreshCustomCases()
+      toast.success(tr(dataRef.current.settings.language, 'cf.saved'))
+      return true
+    },
+    [refreshCustomCases, toast],
+  )
+
+  const removeCustomCase = useCallback(
+    (id: string) => {
+      storageDeleteCase(id)
+      refreshCustomCases()
+      toast.info(tr(dataRef.current.settings.language, 'cf.deleted'))
+    },
+    [refreshCustomCases, toast],
   )
 
   /* ---------------------------------- theme --------------------------------- */
@@ -328,7 +390,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           },
         }
         const lang = incoming.settings.language
-        const ok = persistData(incoming)
+        const ok = persistData(incoming, accountIdRef.current)
         if (!ok) {
           toast.error(tr(lang, 'toast.storageError'), tr(lang, 'toast.storageErrorDesc'))
           return false
@@ -345,16 +407,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const clearAll = useCallback(() => {
     const lang = dataRef.current.settings.language
-    clearAllKeys()
+    clearAllKeys(accountIdRef.current)
     const fresh: AppData = { ...DEFAULT_DATA, profile: { ...DEFAULT_DATA.profile, onboarded: true } }
     setData(fresh)
     toast.info(tr(lang, 'toast.cleared'), tr(lang, 'toast.clearedDesc'))
   }, [toast])
 
+  const isAdmin = levelForXP(data.profile.xp).info.level >= 5
+
   const value = useMemo<AppContextValue>(
     () => ({
       data,
       lastSavedAt,
+      isAdmin,
+      customCases,
+      addCustomCase,
+      removeCustomCase,
       getAnalysis,
       startCase,
       updateAnalysis,
@@ -373,6 +441,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [
       data,
       lastSavedAt,
+      isAdmin,
+      customCases,
+      addCustomCase,
+      removeCustomCase,
       getAnalysis,
       startCase,
       updateAnalysis,

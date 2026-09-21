@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { CASES, getCase } from '../data/cases'
 import { useApp } from '../context/AppContext'
-import { DIFF_KEYS, INDUSTRY_KEYS } from '../i18n'
+import { DIFF_KEYS, industryText } from '../i18n'
 import type { TranslationKey } from '../i18n'
 import { localizeCase, useI18n } from '../i18n/useI18n'
 import { cn } from '../lib/utils'
@@ -29,7 +29,7 @@ interface SearchResult {
 }
 
 export function SearchPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { data } = useApp()
+  const { data, customCases } = useApp()
   const { t, lang } = useI18n()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
@@ -58,7 +58,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
     const out: SearchResult[] = []
     if (!q) return out
 
-    for (const raw of CASES) {
+    for (const raw of [...CASES, ...customCases]) {
       const c = localizeCase(raw, lang)
       if (`${c.title} ${c.industry} ${c.tagline}`.toLowerCase().includes(q)) {
         const analysis = data.analyses[c.id]
@@ -68,7 +68,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
           icon: Briefcase,
           title: c.title,
           subtitle:
-            t('sp.caseSubtitle', { industry: t(INDUSTRY_KEYS[c.industry]), difficulty: t(DIFF_KEYS[c.difficulty]) }) +
+            t('sp.caseSubtitle', { industry: industryText(c.industry, lang), difficulty: t(DIFF_KEYS[c.difficulty]) }) +
             (analysis ? t('sp.inProgressSuffix') : ''),
           to: analysis ? `/analysis/${c.id}/${analysis.lastStep}` : `/cases/${c.id}`,
         })
@@ -129,7 +129,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
       }
     }
     return out.slice(0, 14)
-  }, [query, data.analyses, lang, t])
+  }, [query, data.analyses, customCases, lang, t])
 
   useEffect(() => setActive(0), [results.length])
 

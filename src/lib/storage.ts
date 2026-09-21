@@ -7,6 +7,11 @@ export const STORAGE_KEYS = {
   settings: 'sas.settings',
 } as const
 
+/** Per-account key namespace (no backend — accounts live in this browser). */
+export function keyFor(base: string, accountId?: string | null): string {
+  return accountId ? `${base}.u.${accountId}` : base
+}
+
 export function readJSON<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key)
@@ -35,20 +40,44 @@ export function removeKey(key: string): void {
   }
 }
 
-export function clearAllKeys(): void {
-  Object.values(STORAGE_KEYS).forEach(removeKey)
+export function clearAllKeys(accountId?: string | null): void {
+  Object.values(STORAGE_KEYS).forEach((base) => removeKey(keyFor(base, accountId)))
 }
 
-export function loadPersistedData(): AppData | null {
+/**
+ * Pre-authentication data used four unsuffixed keys. When a user signs up or
+ * logs in for the first time, move that legacy progress into their account so
+ * nothing is lost. Only the first account to touch it gets it.
+ */
+export function migrateLegacyDataTo(accountId: string): void {
   try {
-    const rawProfile = localStorage.getItem(STORAGE_KEYS.profile)
+    let moved = false
+    for (const base of Object.values(STORAGE_KEYS)) {
+      const namespaced = keyFor(base, accountId)
+      if (localStorage.getItem(namespaced) == null) {
+        const legacy = localStorage.getItem(base)
+        if (legacy != null) {
+          localStorage.setItem(namespaced, legacy)
+          moved = true
+        }
+      }
+    }
+    if (moved) Object.values(STORAGE_KEYS).forEach(removeKey)
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+export function loadPersistedData(accountId?: string | null): AppData | null {
+  try {
+    const rawProfile = localStorage.getItem(keyFor(STORAGE_KEYS.profile, accountId))
     if (!rawProfile) return null
     const profile = JSON.parse(rawProfile) as AppData['profile']
-    const storedSettings = readJSON<Partial<AppData['settings']>>(STORAGE_KEYS.settings, {})
+    const storedSettings = readJSON<Partial<AppData['settings']>>(keyFor(STORAGE_KEYS.settings, accountId), {})
     return {
       profile,
-      analyses: readJSON(STORAGE_KEYS.analyses, {}),
-      unlocked: readJSON(STORAGE_KEYS.unlocked, {}),
+      analyses: readJSON(keyFor(STORAGE_KEYS.analyses, accountId), {}),
+      unlocked: readJSON(keyFor(STORAGE_KEYS.unlocked, accountId), {}),
       settings: {
         theme: storedSettings.theme ?? 'dark',
         language: storedSettings.language === 'id' ? 'id' : 'en',
@@ -59,11 +88,11 @@ export function loadPersistedData(): AppData | null {
   }
 }
 
-export function persistData(data: AppData): boolean {
+export function persistData(data: AppData, accountId?: string | null): boolean {
   const ok =
-    writeJSON(STORAGE_KEYS.profile, data.profile) &&
-    writeJSON(STORAGE_KEYS.analyses, data.analyses) &&
-    writeJSON(STORAGE_KEYS.unlocked, data.unlocked) &&
-    writeJSON(STORAGE_KEYS.settings, data.settings)
+    writeJSON(keyFor(STORAGE_KEYS.profile, accountId), data.profile) &&
+    writeJSON(keyFor(STORAGE_KEYS.analyses, accountId), data.analyses) &&
+    writeJSON(keyFor(STORAGE_KEYS.unlocked, accountId), data.unlocked) &&
+    writeJSON(keyFor(STORAGE_KEYS.settings, accountId), data.settings)
   return ok
 }

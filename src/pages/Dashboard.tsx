@@ -19,7 +19,7 @@ import { useApp } from '../context/AppContext'
 import { getCase } from '../data/cases'
 import { computeOverallProgress, computePhaseProgress, levelForXP } from '../lib/scoring'
 import { relativeTime } from '../lib/utils'
-import { DIFF_KEYS, INDUSTRY_KEYS, LEVEL_TITLE_KEYS } from '../i18n'
+import { DIFF_KEYS, LEVEL_TITLE_KEYS, industryText } from '../i18n'
 import type { TranslationKey } from '../i18n'
 import { localizeCase, useI18n } from '../i18n/useI18n'
 import { Badge, Button, Card, EmptyState, ProgressBar, SectionHeader } from '../components/ui'
@@ -145,7 +145,7 @@ export default function Dashboard() {
                     </div>
                     <p className="mt-0.5 text-sm text-muted">
                       {t('dash.current.lastActivity', {
-                        industry: t(INDUSTRY_KEYS[currentCase.industry]),
+                        industry: industryText(currentCase.industry, lang),
                         time: relativeTime(current.updatedAt, lang),
                       })}
                     </p>
@@ -271,7 +271,7 @@ export default function Dashboard() {
                   </div>
                   <h3 className="mt-3 font-display text-base font-semibold text-slate-900 dark:text-white">{c.title}</h3>
                   <p className="mt-0.5 text-xs text-muted">
-                    {t(INDUSTRY_KEYS[c.industry])} · {relativeTime(a.updatedAt, lang)}
+                    {industryText(c.industry, lang)} · {relativeTime(a.updatedAt, lang)}
                   </p>
                   <ProgressBar value={pct} className="mt-4" showLabel />
                 </Card>

@@ -1,19 +1,29 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowRight, CheckCircle2, Lightbulb, RotateCcw, Search, SlidersHorizontal } from 'lucide-react'
+import {
+  ArrowRight,
+  CheckCircle2,
+  Lightbulb,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Search,
+  SlidersHorizontal,
+  Trash2,
+} from 'lucide-react'
 import { CASES } from '../data/cases'
+import { isCustomCaseId } from '../data/customCases'
 import { useApp } from '../context/AppContext'
 import { computeOverallProgress } from '../lib/scoring'
 import { relativeTime } from '../lib/utils'
-import { DIFF_KEYS, INDUSTRY_KEYS } from '../i18n'
+import { DIFF_KEYS, industryText } from '../i18n'
 import type { TranslationKey } from '../i18n'
 import { localizeCase, useI18n } from '../i18n/useI18n'
-import { Badge, Card, EmptyState, Input, ProgressBar, SectionHeader } from '../components/ui'
+import { Badge, Card, EmptyState, Input, ProgressBar } from '../components/ui'
+import { ConfirmDialog } from '../components/Modal'
 import { DIFFICULTY_TONE } from './Dashboard'
 import type { Difficulty } from '../types'
-
-const INDUSTRY_ORDER = [...new Set(CASES.map((c) => c.industry))]
 
 const filterChip = (active: boolean) =>
   `rounded-xl border px-3.5 py-1.5 text-xs font-semibold transition-all ${
@@ -23,35 +33,58 @@ const filterChip = (active: boolean) =>
   }`
 
 export default function Cases() {
-  const { data } = useApp()
+  const { data, isAdmin, customCases, removeCustomCase } = useApp()
   const { t, lang } = useI18n()
   const navigate = useNavigate()
   const [q, setQ] = useState('')
   const [industry, setIndustry] = useState<string | null>(null)
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
+
+  const allCases = useMemo(
+    () => [...CASES.map((c) => localizeCase(c, lang)), ...customCases],
+    [lang, customCases],
+  )
+  const industryOrder = useMemo(() => [...new Set(allCases.map((c) => c.industry))], [allCases])
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase()
-    return CASES.map((c) => localizeCase(c, lang)).filter((c) => {
+    return allCases.filter((c) => {
       if (industry && c.industry !== industry) return false
       if (difficulty && c.difficulty !== difficulty) return false
       if (!query) return true
-      return `${c.title} ${c.tagline} ${c.industry} ${t(INDUSTRY_KEYS[c.industry])} ${c.objectives.join(' ')}`
+      return `${c.title} ${c.tagline} ${c.industry} ${industryText(c.industry, lang)} ${c.objectives.join(' ')}`
         .toLowerCase()
         .includes(query)
     })
-  }, [q, industry, difficulty, t, lang])
+  }, [q, industry, difficulty, lang, allCases])
 
   return (
     <div className="space-y-6">
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-500 dark:text-cyan-300">
-          {t('cases.kicker')}
-        </p>
-        <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-          {t('cases.title')}
-        </h1>
-        <p className="mt-1.5 max-w-2xl text-sm text-muted">{t('cases.subtitle')}</p>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="flex flex-wrap items-end justify-between gap-3"
+      >
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-500 dark:text-cyan-300">
+            {t('cases.kicker')}
+          </p>
+          <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+            {t('cases.title')}
+          </h1>
+          <p className="mt-1.5 max-w-2xl text-sm text-muted">{t('cases.subtitle')}</p>
+        </div>
+        {isAdmin && (
+          <button
+            onClick={() => navigate('/admin/cases/new')}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/25 transition hover:from-indigo-500 hover:to-blue-500"
+          >
+            <Plus className="h-4 w-4" />
+            {t('cases.addCase')}
+          </button>
+        )}
       </motion.div>
 
       {/* Search + filters */}
@@ -81,13 +114,13 @@ export default function Cases() {
           <button className={filterChip(industry === null)} onClick={() => setIndustry(null)}>
             {t('cases.all')}
           </button>
-          {INDUSTRY_ORDER.map((ind) => (
+          {industryOrder.map((ind) => (
             <button
               key={ind}
               className={filterChip(industry === ind)}
               onClick={() => setIndustry(industry === ind ? null : ind)}
             >
-              {t(INDUSTRY_KEYS[ind])}
+              {industryText(ind, lang)}
             </button>
           ))}
         </div>
@@ -103,7 +136,7 @@ export default function Cases() {
             </button>
           ))}
           <span className="ml-auto text-xs font-semibold text-muted">
-            {t('cases.showing', { count: filtered.length, total: CASES.length })}
+            {t('cases.showing', { count: filtered.length, total: allCases.length })}
           </span>
         </div>
       </motion.div>
@@ -119,6 +152,7 @@ export default function Cases() {
           {filtered.map((c, i) => {
             const analysis = data.analyses[c.id]
             const pct = analysis ? computeOverallProgress(analysis) : 0
+            const custom = isCustomCaseId(c.id)
             return (
               <motion.div
                 key={c.id}
@@ -132,7 +166,10 @@ export default function Cases() {
                       <c.icon className="h-6 w-6" />
                     </span>
                     <div className="flex flex-wrap justify-end gap-1.5">
-                      <Badge>{t(INDUSTRY_KEYS[c.industry])}</Badge>
+                      {custom && (
+                        <Badge tone="violet">{t('cases.custom')}</Badge>
+                      )}
+                      <Badge>{industryText(c.industry, lang)}</Badge>
                       <Badge tone={DIFFICULTY_TONE[c.difficulty]}>{t(DIFF_KEYS[c.difficulty])}</Badge>
                     </div>
                   </div>
@@ -170,7 +207,32 @@ export default function Cases() {
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
                       {t('cases.objectivesCount', { count: c.objectives.length })}
                     </span>
-                    {analysis ? (
+                    {custom && isAdmin ? (
+                      <span className="flex items-center gap-1.5">
+                        <button
+                          aria-label={t('common.edit')}
+                          title={t('common.edit')}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            navigate(`/admin/cases/${c.id}/edit`)
+                          }}
+                          className="rounded-lg border border-slate-200 p-1.5 text-muted transition hover:border-indigo-400 hover:text-indigo-500 dark:border-white/10 dark:hover:border-indigo-400/50"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          aria-label={t('common.delete')}
+                          title={t('common.delete')}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setDeleteTarget({ id: c.id, title: c.title })
+                          }}
+                          className="rounded-lg border border-slate-200 p-1.5 text-muted transition hover:border-rose-400 hover:text-rose-500 dark:border-white/10 dark:hover:border-rose-400/50"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </span>
+                    ) : analysis ? (
                       <Badge tone="cyan">
                         <RotateCcw className="h-3 w-3" />
                         {t('common.continue')}
@@ -197,6 +259,22 @@ export default function Cases() {
         <Lightbulb className="h-3.5 w-3.5 text-amber-400" />
         {t('cases.tip')}
       </motion.p>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title={t('cf.deleteTitle')}
+        message={
+          deleteTarget
+            ? (t('cf.deleteMessage', { case: deleteTarget.title }) as string)
+            : ''
+        }
+        confirmLabel={t('cf.deleteConfirm')}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget) removeCustomCase(deleteTarget.id)
+          setDeleteTarget(null)
+        }}
+      />
     </div>
   )
 }
