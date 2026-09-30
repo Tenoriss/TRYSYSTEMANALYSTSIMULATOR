@@ -46,6 +46,12 @@ export const en = {
   'admin.unlocked': 'Admin unlocked',
   'admin.unlockedDesc': 'You reached the expert level — you can now add case studies.',
   'admin.hint': 'Reach Level 5 (Solution Architect) to unlock case-authoring rights.',
+  'dev.card.kicker': 'PROJECT DEVELOPER',
+  'dev.card.name': 'Tenoriss',
+  'dev.card.role': 'System Analyst Simulator developer',
+  'dev.card.description': 'A browser-based practice space for learning to turn business challenges into structured system analysis.',
+  'dev.card.profile': 'GitHub profile',
+  'dev.card.source': 'Project source',
   'cases.addCase': 'Add Case Study',
   'cases.custom': 'Custom',
 

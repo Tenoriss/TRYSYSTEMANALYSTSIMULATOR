@@ -13,6 +13,7 @@ An interactive, fully client-side simulator for practicing the craft of a **Syst
 - **Guided analysis workflow** — a 7-step stepper (Investigation → Problems → Requirements → Modeling → Solution → Evaluation → Report) with autosave and per-phase progress.
 - **Analysis methods knowledge base** — a searchable, bilingual field guide with practical, stage-filtered playbooks for stakeholder mapping, interviews, SIPOC, root-cause analysis, requirements prioritization, modeling, risk, and evaluation.
 - **Dashboard feedback form** — collect a rating and categorized note; feedback is stored per account in this browser and is never sent to a server.
+- **Developer card** — a bilingual project-maintainer card in Settings with links to the GitHub profile and project source.
 - **Investigation tools** — stakeholder register with Interest × Influence matrix, and an interview simulation with case-specific questions and custom Q&A.
 - **Problem analysis** — severity/frequency-based priority scoring and a dedicated **5 Whys** root cause board.
 - **Requirements engineering** — functional (MoSCoW + status) and non-functional (6 quality categories) requirement tables with search & filter and auto-generated IDs.
@@ -51,7 +52,7 @@ npx esbuild scripts/smoke.ts --bundle --platform=node --format=esm --outfile=.sm
 
 ```
 src/
-├── components/        # Layout (sidebar/topbar/bottom nav), SearchPalette, Modal, UI primitives
+├── components/        # Layout (sidebar/topbar/bottom nav), DeveloperCard, SearchPalette, Modal, UI primitives
 ├── context/           # AppContext (state + per-account persistence + XP), AuthContext (local login/signup) & ToastContext
 ├── data/              # cases.ts (6 built-in scenarios), customCases.ts, analysisMethods.ts
 ├── lib/               # storage.ts, accounts.ts, feedback.ts, crypto.ts, scoring.ts, achievements.ts, utils.ts
