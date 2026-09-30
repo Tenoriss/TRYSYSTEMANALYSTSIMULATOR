@@ -13,7 +13,7 @@ An interactive, fully client-side simulator for practicing the craft of a **Syst
 - **Guided analysis workflow** — a 7-step stepper (Investigation → Problems → Requirements → Modeling → Solution → Evaluation → Report) with autosave and per-phase progress.
 - **Analysis methods knowledge base** — a searchable, bilingual field guide with practical, stage-filtered playbooks for stakeholder mapping, interviews, SIPOC, root-cause analysis, requirements prioritization, modeling, risk, and evaluation.
 - **Dashboard feedback form** — collect a rating and categorized note; feedback is stored per account in this browser and is never sent to a server.
-- **Developer card** — a bilingual project-maintainer card in Settings with links to the GitHub profile and project source.
+- **Developer card** — a bilingual developer card on the Dashboard (below the feedback section) featuring Fredsa Stanlye @ Atennn (`Information Systems Student • Software Development • AI • UI/UX`) with direct links to GitHub and Instagram.
 - **Investigation tools** — stakeholder register with Interest × Influence matrix, and an interview simulation with case-specific questions and custom Q&A.
 - **Problem analysis** — severity/frequency-based priority scoring and a dedicated **5 Whys** root cause board.
 - **Requirements engineering** — functional (MoSCoW + status) and non-functional (6 quality categories) requirement tables with search & filter and auto-generated IDs.
