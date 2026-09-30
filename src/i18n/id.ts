@@ -48,6 +48,12 @@ export const idDict: Record<TranslationKey, string> = {
   'admin.unlocked': 'Admin terbuka',
   'admin.unlockedDesc': 'Anda mencapai level mahir — kini Anda bisa menambahkan studi kasus.',
   'admin.hint': 'Capai Level 5 (Solution Architect) untuk membuka hak menambah studi kasus.',
+  'dev.card.kicker': 'PENGEMBANG PROYEK',
+  'dev.card.name': 'Tenoriss',
+  'dev.card.role': 'Pengembang System Analyst Simulator',
+  'dev.card.description': 'Ruang latihan berbasis browser untuk belajar mengubah tantangan bisnis menjadi analisis sistem yang terstruktur.',
+  'dev.card.profile': 'Profil GitHub',
+  'dev.card.source': 'Sumber proyek',
   'cases.addCase': 'Tambah Studi Kasus',
   'cases.custom': 'Kustom',
 

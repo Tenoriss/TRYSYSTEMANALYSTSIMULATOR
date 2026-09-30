@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { Button, Card, Field, Input, SectionHeader, Segmented, Select } from '../components/ui'
 import { ConfirmDialog } from '../components/Modal'
+import { DeveloperCard } from '../components/DeveloperCard'
 import { useApp } from '../context/AppContext'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
@@ -376,6 +377,8 @@ export default function Settings() {
             </div>
           </div>
         </Card>
+
+        <DeveloperCard />
 
         {/* Danger zone */}
         <Card className="border-rose-200/70 p-6 dark:border-rose-400/20">
