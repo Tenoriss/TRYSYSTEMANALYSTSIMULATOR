@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
   profile: 'sas.profile',
   unlocked: 'sas.achievements',
   settings: 'sas.settings',
+  feedback: 'sas.feedback',
 } as const
 
 /** Per-account key namespace (no backend — accounts live in this browser). */

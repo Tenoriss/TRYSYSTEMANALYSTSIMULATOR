@@ -6,6 +6,8 @@ import { CASES_ID } from '../src/data/cases.id'
 import { en } from '../src/i18n/en'
 import { idDict } from '../src/i18n/id'
 import { tr } from '../src/i18n'
+import { loadFeedback, saveFeedback } from '../src/lib/feedback'
+import { clearAllKeys } from '../src/lib/storage'
 import type { AppData, CaseProgress } from '../src/types'
 
 let failures = 0
@@ -154,6 +156,30 @@ console.log('achievements')
   check('process-mapper unlocked at 5 steps', fresh.includes('process-mapper'))
   check('senior-analyst unlocked at level 5', fresh.includes('senior-analyst'))
   check('problem-solver NOT unlocked (no completed cases)', !fresh.includes('problem-solver'))
+}
+
+console.log('dashboard feedback persistence')
+{
+  const memory = new Map<string, string>()
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (key: string) => memory.get(key) ?? null,
+      setItem: (key: string, value: string) => memory.set(key, String(value)),
+      removeItem: (key: string) => memory.delete(key),
+    },
+  })
+
+  const note = { category: 'idea' as const, rating: 5 as const, message: 'A useful learning feature.' }
+  check('feedback note saves locally', saveFeedback(note, 'smoke-account'))
+  check('feedback note round-trips', loadFeedback('smoke-account')[0]?.message === note.message)
+  check('feedback is isolated per account', loadFeedback('other-account').length === 0)
+  for (let i = 0; i < 21; i++) {
+    saveFeedback({ ...note, message: `Feedback note ${i}` }, 'smoke-account')
+  }
+  check('feedback history is capped at 20 notes', loadFeedback('smoke-account').length === 20)
+  clearAllKeys('smoke-account')
+  check('clear all removes local feedback', loadFeedback('smoke-account').length === 0)
 }
 
 console.log('i18n')

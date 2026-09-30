@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -11,29 +12,58 @@ import {
   Monitor,
   Moon,
   Palette,
+  Pencil,
+  Save,
   ShieldCheck,
   Sun,
   Trash2,
   Upload,
 } from 'lucide-react'
-import { Button, Card, SectionHeader, Segmented } from '../components/ui'
+import { Button, Card, Field, Input, SectionHeader, Segmented, Select } from '../components/ui'
 import { ConfirmDialog } from '../components/Modal'
 import { useApp } from '../context/AppContext'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import { ROLE_KEYS } from '../i18n'
+import { ROLE_KEYS, roleOptions } from '../i18n'
+import type { TranslationKey } from '../i18n'
 import { useI18n } from '../i18n/useI18n'
 import type { Lang } from '../i18n'
-import type { Theme } from '../types'
+import type { AccountRole, Theme } from '../types'
 
 export default function Settings() {
   const { data, setTheme, setLanguage, exportData, importData, clearAll, isAdmin } = useApp()
-  const { account, logout } = useAuth()
+  const { account, logout, updateProfile } = useAuth()
   const { t } = useI18n()
   const toast = useToast()
   const navigate = useNavigate()
   const fileRef = useRef<HTMLInputElement>(null)
   const [confirmClear, setConfirmClear] = useState(false)
+  const [editingProfile, setEditingProfile] = useState(false)
+  const [profileName, setProfileName] = useState(account?.name ?? '')
+  const [profileRole, setProfileRole] = useState<AccountRole | ''>(account?.role ?? '')
+  const [profileCustomRole, setProfileCustomRole] = useState(account?.customRole ?? '')
+  const [profileError, setProfileError] = useState<TranslationKey | null>(null)
+
+  const beginProfileEdit = () => {
+    if (!account) return
+    setProfileName(account.name)
+    setProfileRole(account.role)
+    setProfileCustomRole(account.customRole ?? '')
+    setProfileError(null)
+    setEditingProfile(true)
+  }
+
+  const handleProfileSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const result = updateProfile({ name: profileName, role: profileRole, customRole: profileCustomRole })
+    if (!result.ok) {
+      setProfileError(result.error ?? 'profile.err.nameRequired')
+      return
+    }
+    setProfileError(null)
+    setEditingProfile(false)
+    toast.success(t('profile.updated'), t('profile.updatedDesc'))
+  }
 
   const handleExport = () => {
     if (exportData()) toast.success(t('toast.exported'), t('toast.exportedDesc'))
@@ -92,17 +122,89 @@ export default function Settings() {
                   <p className="mt-0.5 text-[11px] text-muted">{t('st.accountDesc')}</p>
                 </div>
               </div>
-              <Button
-                variant="secondary"
-                icon={LogOut}
-                onClick={() => {
-                  logout()
-                  navigate('/login')
-                }}
-              >
-                {t('menu.logout')}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                {!editingProfile && (
+                  <Button variant="secondary" icon={Pencil} onClick={beginProfileEdit}>
+                    {t('profile.edit')}
+                  </Button>
+                )}
+                <Button
+                  variant="secondary"
+                  icon={LogOut}
+                  onClick={() => {
+                    logout()
+                    navigate('/login')
+                  }}
+                >
+                  {t('menu.logout')}
+                </Button>
+              </div>
             </div>
+            {editingProfile && (
+              <form onSubmit={handleProfileSubmit} className="mt-5 border-t border-slate-100 pt-5 dark:border-white/[0.06]">
+                <div className="mb-4">
+                  <h3 className="font-display text-sm font-semibold text-slate-900 dark:text-white">
+                    {t('profile.edit')}
+                  </h3>
+                  <p className="mt-1 text-xs text-muted">{t('profile.editSubtitle')}</p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label={t('auth.name')}>
+                    <Input
+                      autoComplete="name"
+                      value={profileName}
+                      onChange={(event) => setProfileName(event.target.value)}
+                      aria-label={t('auth.name')}
+                      required
+                    />
+                  </Field>
+                  <Field label={t('auth.email')} hint={t('profile.emailHint')}>
+                    <Input value={account.email} aria-label={t('auth.email')} readOnly />
+                  </Field>
+                  <Field label={t('auth.role')} hint={t('profile.roleHint')} className="sm:col-span-2">
+                    <Select
+                      value={profileRole}
+                      onChange={(event) => setProfileRole(event.target.value as AccountRole | '')}
+                      aria-label={t('auth.role')}
+                      options={[
+                        { value: '', label: t('auth.rolePh') },
+                        ...roleOptions().map((role) => ({ value: role, label: t(ROLE_KEYS[role]) })),
+                      ]}
+                      required
+                    />
+                  </Field>
+                  {profileRole === 'other' && (
+                    <Field label={t('auth.roleOther')} className="sm:col-span-2">
+                      <Input
+                        value={profileCustomRole}
+                        onChange={(event) => setProfileCustomRole(event.target.value)}
+                        placeholder={t('auth.roleOtherPh')}
+                        aria-label={t('auth.roleOther')}
+                        required
+                      />
+                    </Field>
+                  )}
+                </div>
+                {profileError && (
+                  <p role="alert" className="mt-4 rounded-lg bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-300">
+                    {t(profileError)}
+                  </p>
+                )}
+                <div className="mt-4 flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      setEditingProfile(false)
+                      setProfileError(null)
+                    }}
+                  >
+                    {t('profile.cancel')}
+                  </Button>
+                  <Button type="submit" icon={Save}>{t('profile.save')}</Button>
+                </div>
+              </form>
+            )}
             {!isAdmin && <p className="mt-3 text-xs text-muted">{t('admin.hint')}</p>}
           </Card>
         )}

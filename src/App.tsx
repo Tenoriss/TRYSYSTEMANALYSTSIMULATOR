@@ -7,6 +7,7 @@ import { AppLayout } from './components/Layout'
 
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Cases = lazy(() => import('./pages/Cases'))
+const Methods = lazy(() => import('./pages/Methods'))
 const CaseDetail = lazy(() => import('./pages/CaseDetail'))
 const Onboarding = lazy(() => import('./pages/Onboarding'))
 const MyAnalyses = lazy(() => import('./pages/MyAnalyses'))
@@ -74,6 +75,7 @@ export default function App() {
                     <Route path="/onboarding" element={<Onboarding />} />
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/cases" element={<Cases />} />
+                    <Route path="/methods" element={<Methods />} />
                     <Route path="/cases/:id" element={<CaseDetail />} />
                     <Route path="/my-analyses" element={<MyAnalyses />} />
                     <Route path="/reports" element={<Reports />} />
