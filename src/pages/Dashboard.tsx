@@ -33,6 +33,7 @@ import { relativeTime } from '../lib/utils'
 import { DIFF_KEYS, LEVEL_TITLE_KEYS, industryText } from '../i18n'
 import type { TranslationKey } from '../i18n'
 import { localizeCase, useI18n } from '../i18n/useI18n'
+import { DeveloperCard } from '../components/DeveloperCard'
 import { Badge, Button, Card, EmptyState, Field, ProgressBar, SectionHeader, Select, Textarea } from '../components/ui'
 import type { BadgeTone } from '../components/ui'
 import type { Difficulty, IconType } from '../types'
@@ -465,6 +466,11 @@ export default function Dashboard() {
         <div className="lg:col-span-3">
           <DashboardFeedbackForm />
         </div>
+      </motion.div>
+
+      {/* About the developer */}
+      <motion.div {...fadeUp} transition={{ delay: 0.28, duration: 0.35 }}>
+        <DeveloperCard />
       </motion.div>
     </div>
   )

@@ -1,11 +1,11 @@
-import { ArrowUpRight, Code2, Github } from 'lucide-react'
+import { ArrowUpRight, Code2, Github, Instagram } from 'lucide-react'
 import { useI18n } from '../i18n/useI18n'
 import { Card } from './ui'
 
-const DEVELOPER_URL = 'https://github.com/Tenoriss'
-const REPOSITORY_URL = 'https://github.com/Tenoriss/TRYSYSTEMANALYSTSIMULATOR'
+const GITHUB_URL = 'https://github.com/Tenoriss'
+const INSTAGRAM_URL = 'https://www.instagram.com/_pinocchaossticuxui/'
 
-/** Public project-maintainer card with direct links to the profile and source repository. */
+/** Public developer card with direct links to GitHub and Instagram. */
 export function DeveloperCard() {
   const { t } = useI18n()
 
@@ -24,29 +24,24 @@ export function DeveloperCard() {
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-500 dark:text-cyan-300">
               {t('dev.card.kicker')}
             </p>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <h2 className="font-display text-base font-semibold text-slate-900 dark:text-white">
-                {t('dev.card.name')}
-              </h2>
-              <span className="rounded-full border border-slate-200 bg-white/70 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-                {t('dev.card.role')}
-              </span>
-            </div>
+            <h2 className="mt-1 font-display text-base font-semibold text-slate-900 dark:text-white">
+              {t('dev.card.name')}
+            </h2>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted sm:text-sm">
-              {t('dev.card.description')}
+              {t('dev.card.role')}
             </p>
           </div>
         </div>
 
         <div className="flex flex-wrap gap-2 sm:shrink-0">
-          <a className="btn btn-secondary btn-sm" href={DEVELOPER_URL} target="_blank" rel="noopener noreferrer">
+          <a className="btn btn-secondary btn-sm" href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
             <Github className="h-4 w-4" aria-hidden="true" />
-            {t('dev.card.profile')}
+            {t('dev.card.github')}
             <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
           </a>
-          <a className="btn btn-secondary btn-sm" href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer">
-            <Code2 className="h-4 w-4" aria-hidden="true" />
-            {t('dev.card.source')}
+          <a className="btn btn-secondary btn-sm" href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">
+            <Instagram className="h-4 w-4" aria-hidden="true" />
+            {t('dev.card.instagram')}
             <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
           </a>
         </div>
