@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Award,
+  BookOpen,
   ChevronRight,
   FileSearch,
   FileText,
@@ -32,6 +33,7 @@ import { ProgressBar } from './ui'
 const NAV: { to: string; key: TranslationKey; icon: typeof LayoutDashboard }[] = [
   { to: '/dashboard', key: 'nav.dashboard', icon: LayoutDashboard },
   { to: '/cases', key: 'nav.cases', icon: FileSearch },
+  { to: '/methods', key: 'nav.methods', icon: BookOpen },
   { to: '/my-analyses', key: 'nav.myAnalyses', icon: Radar },
   { to: '/reports', key: 'nav.reports', icon: FileText },
   { to: '/achievements', key: 'nav.achievements', icon: Award },
@@ -387,6 +389,7 @@ function TopBar({ onSearch }: { onSearch: () => void }) {
 }
 
 const SHORT_LABELS: Record<string, TranslationKey> = {
+  'nav.methods': 'nav.methodsShort',
   'nav.myAnalyses': 'nav.analysesShort',
   'nav.achievements': 'nav.awardsShort',
 }
@@ -394,13 +397,13 @@ const SHORT_LABELS: Record<string, TranslationKey> = {
 function BottomNav() {
   const location = useLocation()
   const { t } = useI18n()
-  const items = [NAV[0], NAV[1], NAV[2], NAV[4], NAV[5]]
+  const items = NAV.filter((item) => item.to !== '/reports')
   return (
     <nav
       aria-label={t('nav.mobileAria')}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl dark:border-white/[0.07] dark:bg-[#080d18]/95 lg:hidden no-print"
     >
-      <div className="grid grid-cols-5">
+      <div className="grid grid-cols-6">
         {items.map((n) => {
           const active = location.pathname === n.to || (n.to !== '/dashboard' && location.pathname.startsWith(n.to))
           const Icon = n.icon

@@ -28,11 +28,18 @@ export interface SignupInput {
   customRole?: string
 }
 
+export interface ProfileUpdateInput {
+  name: string
+  role: AccountRole | ''
+  customRole?: string
+}
+
 interface AuthContextValue {
   account: Account | null
   isAuthenticated: boolean
   signup: (input: SignupInput) => Promise<AuthResult>
   login: (email: string, password: string) => Promise<AuthResult>
+  updateProfile: (input: ProfileUpdateInput) => AuthResult
   logout: () => void
 }
 
@@ -73,14 +80,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true }
   }, [])
 
+  const updateProfile = useCallback(
+    (input: ProfileUpdateInput): AuthResult => {
+      if (!account) return { ok: false, error: 'auth.err.credentials' }
+      if (!input.name.trim()) return { ok: false, error: 'profile.err.nameRequired' }
+      if (!input.role) return { ok: false, error: 'profile.err.roleRequired' }
+      if (input.role === 'other' && !input.customRole?.trim()) {
+        return { ok: false, error: 'profile.err.customRoleRequired' }
+      }
+
+      const updated: Account = {
+        ...account,
+        name: input.name.trim(),
+        role: input.role,
+        customRole: input.role === 'other' ? input.customRole?.trim() : undefined,
+      }
+      const accounts = loadAccounts()
+      const accountIndex = accounts.findIndex((candidate) => candidate.id === account.id)
+      if (accountIndex < 0) return { ok: false, error: 'auth.err.credentials' }
+      accounts[accountIndex] = updated
+      if (!saveAccounts(accounts)) return { ok: false, error: 'toast.storageError' }
+
+      setAccount(updated)
+      return { ok: true }
+    },
+    [account],
+  )
+
   const logout = useCallback(() => {
     endSession()
     setAccount(null)
   }, [])
 
   const value = useMemo(
-    () => ({ account, isAuthenticated: !!account, signup, login, logout }),
-    [account, signup, login, logout],
+    () => ({ account, isAuthenticated: !!account, signup, login, updateProfile, logout }),
+    [account, signup, login, updateProfile, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
